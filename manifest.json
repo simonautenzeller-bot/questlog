@@ -1,0 +1,17 @@
+{
+  "name": "Questlog – Spieletagebuch",
+  "short_name": "Questlog",
+  "description": "Spieletagebuch für Story-Games: Fortschritt, Bosse und Notizen pro Spiel festhalten.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "lang": "de",
+  "background_color": "#EDE4D2",
+  "theme_color": "#B5622A",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
