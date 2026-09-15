@@ -154,7 +154,7 @@
     flex-direction:column;
     min-height:100vh;
   }
-  .sidebar-fixed{ padding:14px 20px 0; }
+  .sidebar-fixed{ padding:14px 20px; }
   .sidebar-scroll{
     flex:1;
     overflow-y:auto;
@@ -487,7 +487,7 @@
       <button class="add-btn" id="openAdd">+ Neues Spiel</button>
       <input type="search" class="search-input" id="searchInput" placeholder="Spiel suchen …">
     </div>
-    <div class="sidebar-scroll">
+    <div class="sidebar-scroll" id="libraryListWrap">
       <div id="libraryList"></div>
     </div>
   </aside>
@@ -706,6 +706,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('#viewTabs button'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-view')===state.view);
     });
+    var isStats = state.view === 'stats';
+    document.getElementById('openAdd').hidden = isStats;
+    document.getElementById('searchInput').hidden = isStats;
+    document.getElementById('libraryListWrap').hidden = isStats;
   }
 
   /* ---------- Library / sidebar list ---------- */
