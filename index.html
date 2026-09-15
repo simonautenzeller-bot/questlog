@@ -2,6 +2,13 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<script>
+  try{
+    var __t = localStorage.getItem('questlog.theme');
+    if(__t === 'light') document.documentElement.setAttribute('data-theme','light');
+    else if(__t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  }catch(e){}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Questlog</title>
 <meta name="description" content="Spiele-Tracker: was du gespielt hast, was noch ansteht, mit Bewertung, Spielzeit und Statistik.">
@@ -108,10 +115,11 @@
 
   /* ---------- Header brand mark ---------- */
   .brand{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
     padding:22px 20px 14px;
     border-bottom:1px solid var(--border-soft);
   }
+  .brand-title{ display:flex; align-items:center; gap:10px; min-width:0; }
   .brand svg{ width:26px; height:26px; flex:none; }
   .brand h1{
     font-family:var(--font-display);
@@ -146,13 +154,28 @@
     flex-direction:column;
     min-height:100vh;
   }
+  .sidebar-fixed{ padding:14px 20px 0; }
   .sidebar-scroll{
     flex:1;
     overflow-y:auto;
-    padding:14px 12px 24px;
+    padding:6px 12px 24px;
   }
+
+  /* Segmented control — reused for view tabs and theme toggle */
+  .segmented{
+    display:flex; gap:3px;
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-m);
+    padding:3px;
+  }
+  .segmented button{
+    flex:1; border:none; background:none; cursor:pointer;
+    font-family:var(--font-mono); font-size:.68rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-faint); padding:7px 4px; border-radius:calc(var(--radius-m) - 3px);
+  }
+  .segmented button.active{ background:var(--accent); color:#fff; }
+
   .add-btn{
-    margin:14px 20px 4px;
+    width:100%; margin:12px 0 0;
     display:flex; align-items:center; justify-content:center; gap:6px;
     padding:9px 14px;
     background:var(--accent);
@@ -171,17 +194,13 @@
     outline:2px solid var(--accent); outline-offset:2px;
   }
 
-  .nav-item{
-    display:flex; align-items:center; gap:9px;
-    width:100%; text-align:left;
-    background:transparent; border:1px solid transparent; border-radius:var(--radius-m);
-    padding:9px 10px; margin:10px 0 4px; cursor:pointer;
-    font-family:var(--font-display); font-weight:600; font-size:.92rem; color:var(--ink);
+  .search-input{
+    width:100%; margin-top:10px;
+    font-family:var(--font-body); font-size:.85rem; padding:7px 10px;
+    border:1px solid var(--border); border-radius:var(--radius-s);
+    background:var(--surface); color:var(--ink);
   }
-  .nav-item svg{ width:16px; height:16px; flex:none; color:var(--ink-faint); }
-  .nav-item:hover{ background:var(--surface); }
-  .nav-item.active{ background:var(--surface); border-color:var(--border); box-shadow:var(--shadow); }
-  .nav-item.active svg{ color:var(--accent); }
+  .search-input::placeholder{ color:var(--ink-faint); }
 
   .group-label{
     font-family:var(--font-mono);
@@ -191,6 +210,7 @@
     color:var(--ink-faint);
     margin:18px 8px 6px;
   }
+  .group-label:first-child{ margin-top:10px; }
 
   .game-card{
     display:flex; flex-direction:column; gap:5px;
@@ -245,6 +265,7 @@
     margin:0 0 8px;
   }
   .game-head .tags{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .icon-group{ display:flex; gap:8px; flex:none; }
   .pill{
     font-family:var(--font-mono);
     font-size:.68rem;
@@ -278,6 +299,7 @@
     cursor:pointer; color:var(--ink-faint); flex:none;
   }
   .icon-btn:hover{ color:#B23A2E; border-color:#B23A2E; }
+  .icon-btn.fav-active:hover{ color:var(--accent-strong); border-color:var(--accent); }
   .icon-btn svg{ width:15px; height:15px; }
 
   .stat-row{
@@ -304,6 +326,8 @@
   .flames svg{ width:16px; height:16px; }
   .flame-off{ fill:var(--surface-2); stroke:var(--border); stroke-width:1.2; }
   .flame-on{ fill:var(--accent); stroke:var(--accent-strong); stroke-width:1.2; }
+  .star-off{ fill:none; stroke:var(--ink-faint); stroke-width:1.6; }
+  .star-on{ fill:var(--accent); stroke:var(--accent-strong); stroke-width:1; }
 
   .notes-area{
     width:100%; min-height:160px; font-family:var(--font-body); font-size:.95rem; line-height:1.6;
@@ -336,7 +360,7 @@
   .stats-head p{ color:var(--ink-faint); font-size:.9rem; margin:0 0 26px; }
 
   .kpi-grid{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr));
     gap:12px; margin-bottom:32px;
   }
   .kpi-tile{
@@ -381,7 +405,9 @@
   .modal{
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l);
     box-shadow:var(--shadow); width:100%; max-width:380px; padding:26px;
+    max-height:88vh; overflow-y:auto;
   }
+  .modal.wide{ max-width:440px; }
   .modal h3{ font-family:var(--font-display); font-size:1.3rem; margin:0 0 18px; }
   .field{ display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
   .field label{ font-family:var(--font-mono); font-size:.65rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); }
@@ -389,12 +415,37 @@
     font-family:var(--font-body); font-size:.92rem; padding:8px 11px;
     border:1px solid var(--border); border-radius:var(--radius-s); background:var(--bg); color:var(--ink);
   }
+  .field .inline{ display:flex; align-items:center; gap:8px; }
+  .field .inline input{ width:90px; }
+  .field .unit{ font-family:var(--font-mono); font-size:.8rem; color:var(--ink-soft); }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+  .primary-btn{
+    background:var(--accent); color:#fff; border:none; border-radius:var(--radius-s);
+    padding:8px 16px; font-family:var(--font-mono); font-size:.7rem; letter-spacing:.06em;
+    text-transform:uppercase; cursor:pointer;
+  }
+  .primary-btn:hover{ background:var(--accent-strong); }
   .ghost-btn{
     font-family:var(--font-mono); font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
     background:none; border:1px solid transparent; padding:8px 14px; cursor:pointer; color:var(--ink-soft);
   }
   .ghost-btn:hover{ color:var(--ink); }
+
+  .settings-section{ margin-bottom:22px; }
+  .settings-section:last-of-type{ margin-bottom:0; }
+  .settings-section h4{
+    font-family:var(--font-mono); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 10px;
+  }
+  .settings-row{ display:flex; gap:10px; }
+  .settings-btn{
+    flex:1; font-family:var(--font-mono); font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+    padding:9px 10px; border:1px solid var(--border); border-radius:var(--radius-s);
+    background:var(--bg); color:var(--ink); cursor:pointer; text-align:center;
+  }
+  .settings-btn:hover{ border-color:var(--accent); color:var(--accent-strong); }
+  .version-line{ font-family:var(--font-mono); font-size:.76rem; color:var(--ink-faint); }
+  .version-line b{ color:var(--ink-soft); }
 
   .empty-state{
     color:var(--ink-faint); font-size:.88rem; padding:6px 0 20px; font-style:italic;
@@ -416,19 +467,27 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <svg viewBox="0 0 24 24"><path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z" fill="var(--accent)" stroke="var(--accent-strong)" stroke-width=".6"/></svg>
-      <div>
-        <h1>Questlog</h1>
-        <span class="sub">Spiele-Tracker</span>
+      <div class="brand-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z" fill="var(--accent)" stroke="var(--accent-strong)" stroke-width=".6"/></svg>
+        <div>
+          <h1>Questlog</h1>
+          <span class="sub">Spiele-Tracker</span>
+        </div>
       </div>
+      <button class="icon-btn" id="openSettings" title="Einstellungen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 13a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V19a2 2 0 11-4 0v-.2a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.6-1H4a2 2 0 110-4h.2a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H10a1.7 1.7 0 001-1.6V4a2 2 0 114 0v.2a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V10a1.7 1.7 0 001.6 1H20a2 2 0 110 4h-.2a1.7 1.7 0 00-1.6 1z"/></svg>
+      </button>
     </div>
     <div class="totals-line" id="totalsLine"></div>
-    <div class="sidebar-scroll">
+    <div class="sidebar-fixed">
+      <div class="segmented" id="viewTabs">
+        <button data-view="library">Spiele</button>
+        <button data-view="stats">Statistik</button>
+      </div>
       <button class="add-btn" id="openAdd">+ Neues Spiel</button>
-      <button class="nav-item" id="statsNav">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19V10M12 19V5M19 19v-7"/></svg>
-        Statistik
-      </button>
+      <input type="search" class="search-input" id="searchInput" placeholder="Spiel suchen …">
+    </div>
+    <div class="sidebar-scroll">
       <div id="libraryList"></div>
     </div>
   </aside>
@@ -445,7 +504,16 @@
     </div>
     <div class="field">
       <label for="fPlatform">Plattform</label>
-      <input id="fPlatform" type="text" placeholder="z.B. PS5, Switch, PC">
+      <select id="fPlatform">
+        <option value="">– keine Angabe –</option>
+        <option value="Gameboy">Gameboy</option>
+        <option value="Gameboy 3DS">Gameboy 3DS</option>
+        <option value="PC">PC</option>
+        <option value="PS4">PS4</option>
+        <option value="PS5">PS5</option>
+        <option value="Switch">Switch</option>
+        <option value="Switch 2">Switch 2</option>
+      </select>
     </div>
     <div class="field">
       <label for="fStatus">Status</label>
@@ -456,9 +524,54 @@
         <option value="played">Durchgespielt</option>
       </select>
     </div>
+    <div class="field">
+      <label>Bewertung</label>
+      <div class="flames" id="fFlames"></div>
+    </div>
+    <div class="field">
+      <label for="fHours">Spielzeit</label>
+      <div class="inline">
+        <input id="fHours" type="number" min="0" value="0">
+        <span class="unit">Std.</span>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="ghost-btn" id="cancelAdd">Abbrechen</button>
-      <button class="primary-btn" id="confirmAdd" style="background:var(--accent);color:#fff;border:none;border-radius:var(--radius-s);padding:8px 16px;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;">Anlegen</button>
+      <button class="primary-btn" id="confirmAdd">Anlegen</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="modal wide">
+    <h3>Einstellungen</h3>
+
+    <div class="settings-section">
+      <h4>Aussehen</h4>
+      <div class="segmented" id="themeToggle">
+        <button data-theme="system">System</button>
+        <button data-theme="light">Hell</button>
+        <button data-theme="dark">Dunkel</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Daten</h4>
+      <div class="settings-row">
+        <button class="settings-btn" id="exportData">Exportieren</button>
+        <button class="settings-btn" id="importDataBtn">Importieren</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
+      <div class="notes-hint">Export als JSON-Datei — zum Sichern oder Übertragen auf ein neues Gerät.</div>
+    </div>
+
+    <div class="settings-section">
+      <h4>Über</h4>
+      <div class="version-line">Questlog · Version <b id="versionText"></b></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="ghost-btn" id="closeSettings">Schließen</button>
     </div>
   </div>
 </div>
@@ -466,6 +579,8 @@
 <script>
 (function(){
   "use strict";
+
+  var APP_VERSION = "1.1.0";
 
   var STATUS_META = {
     playing:{ label:"Am Laufen", color:"var(--st-playing)" },
@@ -475,11 +590,17 @@
   };
   var GROUP_ORDER = ["playing","paused","wishlist","played"];
   var STORE_KEY = "questlog.v2";
+  var THEME_KEY = "questlog.theme";
 
   function uid(){ return Math.random().toString(36).slice(2,10); }
   function esc(s){
     return String(s==null ? "" : s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function sortByTitle(list){
+    return list.slice().sort(function(a,b){
+      return a.title.localeCompare(b.title, 'de', {sensitivity:'base'});
     });
   }
 
@@ -488,22 +609,22 @@
       seeded:true, view:"library", selected:null,
       games:[
         {
-          id:uid(), title:"Dark Souls III", platform:"PC", status:"playing", rating:4, hours:38,
+          id:uid(), title:"Dark Souls III", platform:"PC", status:"playing", rating:4, hours:38, favorite:false,
           notes:"Build: Quality/Dex mit Lothric Knight Sword + Sacred Flame als Backup. Ring-Setup: Chloranthy +3, Favor +3, Carthus Milkring, Prisoner's Chain.\n\nPontiff Sulyvahn im 4. Versuch geschafft, Bloodbite Ring war der Schlüssel gegen die Giftklingen. Abyss Watchers haben am längsten gedauert. Als nächstes: Irithyll weiter erkunden, dann Aldrich."
         },
         {
-          id:uid(), title:"The Witcher 3: Wild Hunt", platform:"PC", status:"played", rating:5, hours:126,
+          id:uid(), title:"The Witcher 3: Wild Hunt", platform:"PC", status:"played", rating:5, hours:126, favorite:true,
           notes:"Blood & Wine + Hearts of Stone komplett durchgespielt, gutes Ende gewählt. Build war Alchemy/Signs-Hybrid mit Quen-Fokus. Toussaint optisch das schönste Gebiet im Spiel, Gaunter O'Dimm bester Antagonist."
         },
         {
-          id:uid(), title:"The Legend of Zelda: Tears of the Kingdom", platform:"Switch", status:"paused", rating:0, hours:22,
+          id:uid(), title:"The Legend of Zelda: Tears of the Kingdom", platform:"Switch", status:"paused", rating:0, hours:22, favorite:false,
           notes:"Wasser- und Feuertempel geschafft, Wind- und Erdtempel stehen noch aus."
         },
         {
-          id:uid(), title:"Pokémon Karmesin", platform:"Switch", status:"wishlist", rating:0, hours:0, notes:""
+          id:uid(), title:"Pokémon Karmesin", platform:"Switch", status:"wishlist", rating:0, hours:0, favorite:false, notes:""
         },
         {
-          id:uid(), title:"Elden Ring", platform:"PC", status:"wishlist", rating:0, hours:0, notes:""
+          id:uid(), title:"Elden Ring", platform:"PC", status:"wishlist", rating:0, hours:0, favorite:false, notes:""
         }
       ]
     };
@@ -525,6 +646,7 @@
   var state = load();
   if(!state.view) state.view = "library";
   if(!state.selected && state.games.length){ state.selected = state.games[0].id; }
+  var searchQuery = "";
 
   function getGame(id){
     for(var i=0;i<state.games.length;i++){ if(state.games[i].id===id) return state.games[i]; }
@@ -534,6 +656,9 @@
   function flameIcon(){
     return '<path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z"/>';
   }
+  function starIcon(){
+    return '<path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.5-6.2 4.5 2.4-7.3-6.2-4.5h7.6z"/>';
+  }
   function miniFlames(n){
     var s = "";
     for(var i=0;i<n;i++){
@@ -541,7 +666,34 @@
     }
     return s;
   }
+  function tinyStar(){
+    return '<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:var(--accent);stroke:var(--accent-strong);stroke-width:1;vertical-align:-1px;margin-right:3px;flex:none">'+starIcon()+'</svg>';
+  }
 
+  /* ---------- Theme ---------- */
+  function loadTheme(){
+    try{ return localStorage.getItem(THEME_KEY) || "system"; }catch(e){ return "system"; }
+  }
+  function applyTheme(pref){
+    var root = document.documentElement;
+    if(pref === "light") root.setAttribute('data-theme','light');
+    else if(pref === "dark") root.setAttribute('data-theme','dark');
+    else root.removeAttribute('data-theme');
+    Array.prototype.forEach.call(document.querySelectorAll('#themeToggle button'), function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-theme')===pref);
+    });
+  }
+  var currentTheme = loadTheme();
+  applyTheme(currentTheme);
+  Array.prototype.forEach.call(document.querySelectorAll('#themeToggle button'), function(btn){
+    btn.addEventListener('click', function(){
+      currentTheme = btn.getAttribute('data-theme');
+      try{ localStorage.setItem(THEME_KEY, currentTheme); }catch(e){}
+      applyTheme(currentTheme);
+    });
+  });
+
+  /* ---------- Totals + view tabs ---------- */
   function renderTotals(){
     var el = document.getElementById('totalsLine');
     var n = state.games.length;
@@ -550,18 +702,32 @@
       ? '<b>'+n+'</b> Spiel'+(n===1?'':'e') + ' · <b>'+hrs+'</b> Std. gesamt'
       : 'Noch keine Spiele erfasst';
   }
+  function renderViewTabs(){
+    Array.prototype.forEach.call(document.querySelectorAll('#viewTabs button'), function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-view')===state.view);
+    });
+  }
 
+  /* ---------- Library / sidebar list ---------- */
   function renderLibrary(){
     var el = document.getElementById('libraryList');
-    var statsBtn = document.getElementById('statsNav');
-    statsBtn.classList.toggle('active', state.view==='stats');
 
     if(!state.games.length){
       el.innerHTML = '<div class="empty-lib">Noch keine Spiele im Questlog.</div>';
       return;
     }
+
+    var q = searchQuery.trim().toLowerCase();
+    var filtered = q ? state.games.filter(function(g){ return g.title.toLowerCase().indexOf(q) !== -1; }) : state.games;
+    filtered = sortByTitle(filtered);
+
+    if(!filtered.length){
+      el.innerHTML = '<div class="empty-lib">Keine Treffer für „'+esc(searchQuery)+'".</div>';
+      return;
+    }
+
     var byStatus = { playing:[], paused:[], played:[], wishlist:[] };
-    state.games.forEach(function(g){ byStatus[g.status].push(g); });
+    filtered.forEach(function(g){ byStatus[g.status].push(g); });
 
     var html = "";
     GROUP_ORDER.forEach(function(key){
@@ -573,6 +739,7 @@
         var active = (state.view==='library' && g.id===state.selected);
         html += '<button class="game-card'+(active?' active':'')+'" data-id="'+g.id+'">'+
           '<div class="row1"><span class="dot" style="background:'+meta.color+'"></span>'+
+          (g.favorite ? tinyStar() : '') +
           '<span class="title">'+esc(g.title)+'</span></div>'+
           '<div class="meta">'+esc(g.platform||"—")+(g.hours?' · '+g.hours+' Std.':'')+(g.rating?' · '+g.rating+'/5':'')+'</div>'+
         '</button>';
@@ -627,7 +794,10 @@
             '</select>'+
           '</div>'+
         '</div>'+
-        '<button class="icon-btn" id="deleteGame" title="Spiel löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a2 2 0 0 1-2 1.9H9.8a2 2 0 0 1-2-1.9L7 7"/></svg></button>'+
+        '<div class="icon-group">'+
+          '<button class="icon-btn'+(g.favorite?' fav-active':'')+'" id="toggleFavorite" title="'+(g.favorite?'Favorit entfernen':'Als Favorit markieren')+'"><svg viewBox="0 0 24 24" class="'+(g.favorite?'star-on':'star-off')+'">'+starIcon()+'</svg></button>'+
+          '<button class="icon-btn" id="deleteGame" title="Spiel löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a2 2 0 0 1-2 1.9H9.8a2 2 0 0 1-2-1.9L7 7"/></svg></button>'+
+        '</div>'+
       '</div>'+
       '<div class="stat-row">'+
         '<div class="stat"><span class="label">Bewertung</span>'+flames+'</div>'+
@@ -654,6 +824,9 @@
 
     document.getElementById('statusSelect').addEventListener('change', function(e){
       g.status = e.target.value; save(); renderAll();
+    });
+    document.getElementById('toggleFavorite').addEventListener('click', function(){
+      g.favorite = !g.favorite; save(); renderAll();
     });
     document.getElementById('deleteGame').addEventListener('click', function(){
       if(!confirm('„'+g.title+'" wirklich aus dem Questlog löschen?')) return;
@@ -708,6 +881,7 @@
     var countPaused = games.filter(function(g){ return g.status==='paused'; }).length;
     var countPlayed = games.filter(function(g){ return g.status==='played'; }).length;
     var countWishlist = games.filter(function(g){ return g.status==='wishlist'; }).length;
+    var countFavorites = games.filter(function(g){ return g.favorite; }).length;
     var totalHours = games.reduce(function(s,g){ return s+(g.hours||0); }, 0);
     var rated = games.filter(function(g){ return g.rating>0; });
     var avgRating = rated.length ? (rated.reduce(function(s,g){ return s+g.rating; },0)/rated.length) : null;
@@ -716,6 +890,7 @@
       { label:"Spiele gesamt", value:games.length },
       { label:"Durchgespielt", value:countPlayed },
       { label:"Warteliste", value:countWishlist },
+      { label:"Favoriten", value:countFavorites },
       { label:"Spielzeit gesamt", value:totalHours+" Std." },
       { label:"Ø Bewertung", value: avgRating!==null ? avgRating.toFixed(1)+" / 5" : "–" }
     ];
@@ -774,21 +949,49 @@
 
   function renderAll(){
     renderTotals();
+    renderViewTabs();
     renderLibrary();
     renderMain();
   }
 
-  document.getElementById('statsNav').addEventListener('click', function(){
-    state.view = "stats";
-    save(); renderAll();
+  Array.prototype.forEach.call(document.querySelectorAll('#viewTabs button'), function(btn){
+    btn.addEventListener('click', function(){
+      state.view = btn.getAttribute('data-view');
+      save(); renderAll();
+    });
   });
 
-  // Modal
+  document.getElementById('searchInput').addEventListener('input', function(e){
+    searchQuery = e.target.value;
+    renderLibrary();
+  });
+
+  /* ---------- Add-game modal ---------- */
+  var addRating = 0;
+  function renderAddFlames(){
+    var el = document.getElementById('fFlames');
+    var html = "";
+    for(var i=1;i<=5;i++){
+      html += '<button type="button" class="flame-btn" data-v="'+i+'" title="'+i+' von 5"><svg viewBox="0 0 24 24" class="'+(i<=addRating?'flame-on':'flame-off')+'">'+flameIcon()+'</svg></button>';
+    }
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll('.flame-btn'), function(btn){
+      btn.addEventListener('click', function(){
+        var v = parseInt(btn.getAttribute('data-v'),10);
+        addRating = (addRating===v) ? v-1 : v;
+        renderAddFlames();
+      });
+    });
+  }
+
   var overlay = document.getElementById('overlay');
   document.getElementById('openAdd').addEventListener('click', function(){
     document.getElementById('fTitle').value="";
     document.getElementById('fPlatform').value="";
     document.getElementById('fStatus').value="wishlist";
+    document.getElementById('fHours').value="0";
+    addRating = 0;
+    renderAddFlames();
     overlay.hidden = false;
     document.getElementById('fTitle').focus();
   });
@@ -797,11 +1000,15 @@
   document.getElementById('confirmAdd').addEventListener('click', function(){
     var title = document.getElementById('fTitle').value.trim();
     if(!title){ document.getElementById('fTitle').focus(); return; }
+    var hoursVal = parseInt(document.getElementById('fHours').value, 10);
     var ng = {
       id:uid(), title:title,
-      platform:document.getElementById('fPlatform').value.trim(),
+      platform:document.getElementById('fPlatform').value,
       status:document.getElementById('fStatus').value,
-      rating:0, hours:0, notes:""
+      rating:addRating,
+      hours: isNaN(hoursVal) ? 0 : Math.max(0, hoursVal),
+      favorite:false,
+      notes:""
     };
     state.games.unshift(ng);
     state.view = "library";
@@ -809,8 +1016,57 @@
     overlay.hidden = true;
     save(); renderAll();
   });
+
+  /* ---------- Settings modal ---------- */
+  document.getElementById('versionText').textContent = APP_VERSION;
+  var settingsOverlay = document.getElementById('settingsOverlay');
+  document.getElementById('openSettings').addEventListener('click', function(){ settingsOverlay.hidden = false; });
+  document.getElementById('closeSettings').addEventListener('click', function(){ settingsOverlay.hidden = true; });
+  settingsOverlay.addEventListener('click', function(e){ if(e.target===settingsOverlay) settingsOverlay.hidden = true; });
+
+  document.getElementById('exportData').addEventListener('click', function(){
+    try{
+      var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'questlog-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }catch(e){}
+  });
+  document.getElementById('importDataBtn').addEventListener('click', function(){
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        if(!parsed || !Array.isArray(parsed.games)) throw new Error('invalid');
+        if(!confirm('Vorhandene '+state.games.length+' Spiele durch '+parsed.games.length+' importierte Spiele ersetzen?')) return;
+        state.games = parsed.games;
+        state.selected = state.games.length ? state.games[0].id : null;
+        state.seeded = false;
+        state.view = "library";
+        save(); renderAll();
+        settingsOverlay.hidden = true;
+      }catch(err){
+        alert('Diese Datei sieht nicht wie ein gültiges Questlog-Backup aus.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
   document.addEventListener('keydown', function(e){
-    if(e.key==='Escape' && !overlay.hidden) overlay.hidden = true;
+    if(e.key!=='Escape') return;
+    if(!overlay.hidden) overlay.hidden = true;
+    if(!settingsOverlay.hidden) settingsOverlay.hidden = true;
   });
 
   renderAll();
