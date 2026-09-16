@@ -5,8 +5,7 @@
 <script>
   try{
     var __t = localStorage.getItem('questlog.theme');
-    if(__t === 'light') document.documentElement.setAttribute('data-theme','light');
-    else if(__t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+    if(__t === 'light' || __t === 'dark' || __t === 'adventure') document.documentElement.setAttribute('data-theme', __t);
   }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -98,6 +97,27 @@
     --st-played:#4FE0A0;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.45);
   }
+  /* Abenteuer — fantasy/adventure theme: dark forest ink with jewel-tone status colors */
+  :root[data-theme="adventure"]{
+    --bg:#14201C;
+    --surface:#1E362E;
+    --surface-2:#24463A;
+    --ink:#F5EFD8;
+    --ink-soft:#D8CFA8;
+    --ink-faint:#AFC2B0;
+    --border:#3E6B57;
+    --border-soft:#2C4F42;
+    --accent:#E8A93D;
+    --accent-strong:#B97A1E;
+    --accent-tint:#3A2A0E;
+    --accent-solid:#8F5E14;
+    --accent-solid-hover:#6E4A0F;
+    --st-playing:#E8A93D;
+    --st-paused:#3D8FE3;
+    --st-wishlist:#A855F7;
+    --st-played:#22C55E;
+    --shadow:0 1px 2px rgba(8,14,12,.4), 0 12px 28px rgba(8,14,12,.45);
+  }
 
   *{box-sizing:border-box;}
   body{
@@ -166,14 +186,14 @@
 
   /* Segmented control — reused for view tabs and theme toggle */
   .segmented{
-    display:flex; gap:3px;
+    display:flex; flex-wrap:wrap; gap:3px;
     background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-m);
     padding:3px;
   }
   .segmented button{
-    flex:1; border:none; background:none; cursor:pointer;
-    font-family:var(--font-mono); font-size:.68rem; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--ink-faint); padding:7px 4px; border-radius:calc(var(--radius-m) - 3px);
+    flex:1; min-width:70px; border:none; background:none; cursor:pointer;
+    font-family:var(--font-mono); font-weight:600; font-size:.68rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-soft); padding:7px 4px; border-radius:calc(var(--radius-m) - 3px);
   }
   .segmented button.active{ background:var(--accent-solid); color:#fff; }
 
@@ -623,6 +643,7 @@
         <button data-theme="system">System</button>
         <button data-theme="light">Hell</button>
         <button data-theme="dark">Dunkel</button>
+        <button data-theme="adventure">Abenteuer</button>
       </div>
     </div>
 
@@ -766,7 +787,7 @@
   }
   function effectiveTheme(){
     if(currentTheme==='light') return 'light';
-    if(currentTheme==='dark') return 'dark';
+    if(currentTheme==='dark' || currentTheme==='adventure') return 'dark';
     try{ return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }catch(e){ return 'light'; }
   }
   function renderThemeQuickIcon(){
@@ -787,8 +808,7 @@
   }
   function applyTheme(pref){
     var root = document.documentElement;
-    if(pref === "light") root.setAttribute('data-theme','light');
-    else if(pref === "dark") root.setAttribute('data-theme','dark');
+    if(pref === "light" || pref === "dark" || pref === "adventure") root.setAttribute('data-theme', pref);
     else root.removeAttribute('data-theme');
     Array.prototype.forEach.call(document.querySelectorAll('#themeToggle button'), function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-theme')===pref);
