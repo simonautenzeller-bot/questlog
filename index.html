@@ -147,7 +147,7 @@
   }
   .brand-title{ display:flex; align-items:center; gap:10px; min-width:0; }
   .brand-actions{ display:flex; align-items:center; gap:8px; flex:none; }
-  .brand svg{ width:26px; height:26px; flex:none; }
+  .brand svg{ width:28px; height:28px; flex:none; }
   .brand h1{
     font-family:var(--font-display);
     font-weight:700;
@@ -530,7 +530,14 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-title">
-        <svg viewBox="0 0 24 24"><path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z" fill="var(--accent)" stroke="var(--accent-strong)" stroke-width=".6"/></svg>
+        <svg viewBox="0 0 24 24" class="app-logo">
+          <circle cx="12" cy="11.5" r="10.6" fill="#14201C"/>
+          <circle cx="12" cy="11.5" r="10.6" fill="none" stroke="#B97A1E" stroke-width="0.7"/>
+          <path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z" fill="#F5EFD8" stroke="#B97A1E" stroke-width=".5"/>
+          <g transform="translate(6,7.5) scale(0.5)">
+            <path d="M12 2c-.6 2.6-2.4 3.9-3.9 5.4C6.4 9.1 5 11 5 13.5 5 18.2 8.1 21 12 21s7-2.8 7-7.5c0-3.3-2.1-5-3.4-6.7.2 1.6-.4 2.6-1.3 3.2-.2-2.9-1.3-5.4-2.3-8z" fill="#B97A1E"/>
+          </g>
+        </svg>
         <div>
           <h1>Questlog</h1>
           <span class="sub">Spiele-Tracker</span>
