@@ -36,12 +36,12 @@
   :root{
     --bg:#D9DBE3;
     --surface:#FFFFFF;
-    --surface-2:#C3C6D2;
+    --surface-2:#B7BACA;
     --ink:#12121A;
     --ink-soft:#2E2E3A;
     --ink-faint:#47475A;
-    --border:#9397AC;
-    --border-soft:#AEB1C2;
+    --border:#767B92;
+    --border-soft:#9498AC;
     --accent:#C2692C;
     --accent-strong:#96501C;
     --accent-tint:#EAD3B7;
@@ -62,14 +62,14 @@
 
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#0B0B10;
-      --surface:#1C1B26;
-      --surface-2:#2B2A38;
+      --bg:#08070C;
+      --surface:#1E1C29;
+      --surface-2:#38354A;
       --ink:#F5F4FA;
       --ink-soft:#D6D4E4;
       --ink-faint:#A8A4C8;
-      --border:#55536A;
-      --border-soft:#3A3948;
+      --border:#726E90;
+      --border-soft:#4A4760;
       --accent:#F0954A;
       --accent-strong:#FFB578;
       --accent-tint:#3A2A16;
@@ -81,14 +81,14 @@
     }
   }
   :root[data-theme="dark"]{
-    --bg:#0B0B10;
-    --surface:#1C1B26;
-    --surface-2:#2B2A38;
+    --bg:#08070C;
+    --surface:#1E1C29;
+    --surface-2:#38354A;
     --ink:#F5F4FA;
     --ink-soft:#D6D4E4;
     --ink-faint:#A8A4C8;
-    --border:#55536A;
-    --border-soft:#3A3948;
+    --border:#726E90;
+    --border-soft:#4A4760;
     --accent:#F0954A;
     --accent-strong:#FFB578;
     --accent-tint:#3A2A16;
@@ -318,6 +318,7 @@
     padding:16px 18px;
     background:var(--surface);
     border:1px solid var(--border-soft);
+    border-top:3px solid var(--accent);
     border-radius:var(--radius-m);
     margin-bottom:22px;
   }
@@ -375,7 +376,8 @@
     gap:12px; margin-bottom:32px;
   }
   .kpi-tile{
-    background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-m);
+    background:var(--surface); border:1px solid var(--border-soft); border-top:3px solid var(--accent);
+    border-radius:var(--radius-m);
     padding:14px 16px; display:flex; flex-direction:column; gap:5px;
   }
   .kpi-tile .label{
@@ -414,7 +416,7 @@
   }
   .overlay[hidden]{ display:none; }
   .modal{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-l);
+    background:var(--surface); border:1px solid var(--border); border-top:4px solid var(--accent); border-radius:var(--radius-l);
     box-shadow:var(--shadow); width:100%; max-width:380px; padding:26px;
     max-height:88vh; overflow-y:auto;
   }
