@@ -102,25 +102,25 @@
   }
   /* Abenteuer — fantasy/adventure theme: aged-map parchment with jewel-tone status colors */
   :root[data-theme="adventure"]{
-    --bg:#C4B583;
-    --surface:#EFE7C7;
-    --surface-2:#B0A468;
-    --ink:#1F2A1A;
-    --ink-soft:#2A3322;
-    --ink-faint:#333D29;
-    --border:#7A6D35;
-    --border-soft:#A2965A;
-    --accent:#C9862A;
-    --accent-strong:#8F5E14;
-    --accent-tint:#E8D9A8;
+    --bg:#14201C;
+    --surface:#1E362E;
+    --surface-2:#24463A;
+    --ink:#F5EFD8;
+    --ink-soft:#D8CFA8;
+    --ink-faint:#AFC2B0;
+    --border:#3E6B57;
+    --border-soft:#2C4F42;
+    --accent:#E8A93D;
+    --accent-strong:#B97A1E;
+    --accent-tint:#3A2A0E;
     --accent-solid:#8F5E14;
     --accent-solid-hover:#6E4A0F;
-    --st-playing:#C9862A;
-    --st-paused:#2A6FB0;
-    --st-wishlist:#7C3FC4;
-    --st-played:#1E8A54;
-    --st-dropped:#B23A3A;
-    --shadow:0 1px 3px rgba(20,26,16,.16), 0 10px 24px rgba(20,26,16,.2);
+    --st-playing:#E8A93D;
+    --st-paused:#3D8FE3;
+    --st-wishlist:#A855F7;
+    --st-played:#22C55E;
+    --st-dropped:#DC3B4A;
+    --shadow:0 1px 2px rgba(8,14,12,.4), 0 12px 28px rgba(8,14,12,.45);
   }
 
   *{box-sizing:border-box;}
@@ -793,8 +793,7 @@
   }
   function effectiveTheme(){
     if(currentTheme==='light') return 'light';
-    if(currentTheme==='dark') return 'dark';
-    if(currentTheme==='adventure') return 'light';
+    if(currentTheme==='dark' || currentTheme==='adventure') return 'dark';
     try{ return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }catch(e){ return 'light'; }
   }
   function renderThemeQuickIcon(){
