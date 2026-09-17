@@ -229,15 +229,26 @@
   }
   .search-input::placeholder{ color:var(--ink-faint); }
 
-  .group-label{
+  .group-header{
+    display:flex; align-items:center; justify-content:space-between; gap:6px;
+    width:100%;
     font-family:var(--font-mono);
     font-size:.65rem;
     letter-spacing:.1em;
     text-transform:uppercase;
     color:var(--ink-faint);
-    margin:18px 8px 6px;
+    background:transparent; border:none;
+    margin:18px 0 6px; padding:6px 8px;
+    border-radius:var(--radius-s);
+    cursor:pointer;
   }
-  .group-label:first-child{ margin-top:10px; }
+  .group-header:hover{ background:var(--surface); color:var(--ink); }
+  .group-header:first-child{ margin-top:10px; }
+  .group-header .chevron{
+    width:14px; height:14px; flex:none;
+    transition:transform .15s ease;
+  }
+  .group-header.collapsed .chevron{ transform:rotate(-90deg); }
 
   .game-card{
     display:flex; flex-direction:column; gap:5px;
@@ -770,6 +781,24 @@
   if(!state.selected && state.games.length){ state.selected = state.games[0].id; }
   var searchQuery = "";
 
+  var COLLAPSE_KEY = "questlog.collapsedGroups";
+  function loadCollapsed(){
+    try{
+      var raw = localStorage.getItem(COLLAPSE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    var d = {};
+    GROUP_ORDER.forEach(function(k){ d[k] = true; });
+    return d;
+  }
+  function saveCollapsed(){
+    try{ localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsedGroups)); }catch(e){}
+  }
+  var collapsedGroups = loadCollapsed();
+  function chevronIcon(){
+    return '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  }
+
   function getGame(id){
     for(var i=0;i<state.games.length;i++){ if(state.games[i].id===id) return state.games[i]; }
     return null;
@@ -884,11 +913,16 @@
     var byStatus = { playing:[], paused:[], played:[], wishlist:[], dropped:[] };
     filtered.forEach(function(g){ byStatus[g.status].push(g); });
 
+    var isSearching = !!q;
     var html = "";
     GROUP_ORDER.forEach(function(key){
       var list = byStatus[key];
       if(!list.length) return;
-      html += '<div class="group-label">'+STATUS_META[key].label+' ('+list.length+')</div>';
+      var isOpen = isSearching || !collapsedGroups[key];
+      html += '<button class="group-header'+(isOpen?'':' collapsed')+'" data-group="'+key+'" aria-expanded="'+isOpen+'">'+
+        '<span>'+STATUS_META[key].label+' ('+list.length+')</span>'+chevronIcon()+
+      '</button>';
+      if(!isOpen) return;
       list.forEach(function(g){
         var meta = STATUS_META[g.status];
         var active = (state.view==='library' && g.id===state.selected);
@@ -906,6 +940,14 @@
         state.view = "library";
         state.selected = btn.getAttribute('data-id');
         save(); renderAll();
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('.group-header'), function(btn){
+      btn.addEventListener('click', function(){
+        var key = btn.getAttribute('data-group');
+        collapsedGroups[key] = !collapsedGroups[key];
+        saveCollapsed();
+        renderLibrary();
       });
     });
   }
