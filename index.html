@@ -779,8 +779,8 @@
         <input id="rawgKeyInput" type="text" placeholder="dein RAWG API-Key">
       </div>
       <div class="notes-hint">Kostenlosen Key auf <a href="https://rawg.io/apidocs" target="_blank" rel="noopener" style="color:var(--accent-strong)">rawg.io/apidocs</a> holen. Damit kannst du bei jedem Spiel (auch nachträglich, über den Cover-Button im Spiel) ein Cover suchen und zuweisen.</div>
-      <button type="button" class="settings-btn" id="bulkFetchBtn" style="width:100%; margin-top:10px;">Alle fehlenden Cover automatisch abrufen</button>
-      <div class="notes-hint">Nimmt pro Spiel den ersten RAWG-Treffer — bei uneindeutigen Titeln lieber einzeln über den Cover-Button prüfen. Spiele mit bereits gesetztem Cover werden übersprungen.</div>
+      <button type="button" class="settings-btn" id="bulkFetchBtn" style="width:100%; margin-top:10px;">Alle Spiele automatisch mit RAWG abgleichen</button>
+      <div class="notes-hint">Nimmt pro Spiel den ersten RAWG-Treffer — bei uneindeutigen Titeln lieber einzeln über den Cover-Button prüfen. Holt Cover für Spiele ohne Cover und ergänzt bei bereits zugewiesenen Covern automatisch fehlende Zusatzdaten (Metacritic, Tags etc.).</div>
       <div class="bulk-status" id="bulkFetchStatus" hidden></div>
     </div>
 
@@ -1760,6 +1760,14 @@
   coverOverlay.addEventListener('click', function(e){ if(e.target===coverOverlay) coverOverlay.hidden = true; });
 
   /* ---------- Bulk cover fetch (RAWG) ---------- */
+  function applyDetailsToGame(g, details){
+    if(!details) return;
+    g.releaseYear = details.releaseYear;
+    g.genres = details.genres; g.developers = details.developers; g.publishers = details.publishers;
+    g.metacritic = details.metacritic; g.esrbRating = details.esrbRating; g.description = details.description;
+    g.tags = details.tags; g.rawgPlatforms = details.rawgPlatforms;
+  }
+
   function bulkFetchCovers(){
     var statusEl = document.getElementById('bulkFetchStatus');
     var btn = document.getElementById('bulkFetchBtn');
@@ -1768,11 +1776,13 @@
       statusEl.innerHTML = '<div>Kein RAWG API-Key hinterlegt.</div>';
       return;
     }
-    var targets = state.games.filter(function(g){ return !g.coverUrl; });
+    // Spiele ohne Cover (volle Suche nötig) + Spiele mit Cover aus einer älteren
+    // Version, denen die neuen Felder (Metacritic, Tags, ...) noch fehlen.
+    var targets = state.games.filter(function(g){ return !g.coverUrl || g.tags === undefined; });
     statusEl.hidden = false;
     statusEl.innerHTML = '';
     if(!targets.length){
-      statusEl.innerHTML = '<div>Alle Spiele haben bereits ein Cover.</div>';
+      statusEl.innerHTML = '<div>Alle Spiele sind bereits vollständig mit RAWG-Daten versorgt.</div>';
       return;
     }
     btn.disabled = true;
@@ -1786,18 +1796,27 @@
         return;
       }
       var g = targets[i];
+      if(g.coverUrl && g.rawgId){
+        // Cover schon vorhanden, nur fehlende Detailfelder nachladen — exakte ID, keine neue Suche nötig.
+        rawgGameDetails(g.rawgId).then(function(details){
+          applyDetailsToGame(g, details);
+          statusEl.innerHTML += '<div>&#10003; '+esc(g.title)+' — Details aktualisiert</div>';
+        }).catch(function(){
+          statusEl.innerHTML += '<div>&times; '+esc(g.title)+' — Fehler</div>';
+        }).then(function(){
+          statusEl.scrollTop = statusEl.scrollHeight;
+          i++;
+          next();
+        });
+        return;
+      }
       rawgSearch(g.title).then(function(results){
         if(results && results.length){
           var top = results[0];
           g.rawgId = top.id;
           g.coverUrl = top.cover || "";
           return rawgGameDetails(top.id).then(function(details){
-            if(details){
-              g.releaseYear = details.releaseYear;
-              g.genres = details.genres; g.developers = details.developers; g.publishers = details.publishers;
-              g.metacritic = details.metacritic; g.esrbRating = details.esrbRating; g.description = details.description;
-              g.tags = details.tags; g.rawgPlatforms = details.rawgPlatforms;
-            }
+            applyDetailsToGame(g, details);
             statusEl.innerHTML += '<div>&#10003; '+esc(g.title)+' &rarr; '+esc(top.name)+(top.year?' ('+esc(top.year)+')':'')+'</div>';
           });
         } else {
