@@ -1542,19 +1542,19 @@
       return;
     }
     el.innerHTML = list.map(function(r){
-      return '<button type="button" class="cover-result" data-id="'+r.id+'" data-cover="'+esc(r.cover)+'">'+
+      return '<button type="button" class="cover-result" data-id="'+r.id+'" data-cover="'+esc(r.cover)+'" data-name="'+esc(r.name)+'">'+
         (r.cover ? '<img src="'+esc(r.cover)+'" alt="" loading="lazy">' : '<span style="width:46px;height:46px;display:block;border-radius:4px;background:var(--surface-2);flex:none"></span>')+
         '<span><span class="cr-name">'+esc(r.name)+'</span><br><span class="cr-year">'+esc(r.year||'')+'</span></span>'+
       '</button>';
     }).join('');
     Array.prototype.forEach.call(el.querySelectorAll('.cover-result'), function(btn){
       btn.addEventListener('click', function(){
-        applyCover(btn.getAttribute('data-id'), btn.getAttribute('data-cover'));
+        applyCover(btn.getAttribute('data-id'), btn.getAttribute('data-cover'), btn.getAttribute('data-name'));
       });
     });
   }
 
-  function applyCover(rawgIdVal, coverUrlVal){
+  function applyCover(rawgIdVal, coverUrlVal, nameVal){
     var target = coverPickerTarget;
     rawgIdVal = rawgIdVal ? parseInt(rawgIdVal, 10) : null;
     if(target === 'add'){
@@ -1570,6 +1570,7 @@
         g.coverUrl = coverUrlVal || "";
         g.releaseYear = "";
         g.genres = []; g.developers = []; g.publishers = [];
+        if(nameVal) g.title = nameVal;
         save(); renderAll();
       }
     }
