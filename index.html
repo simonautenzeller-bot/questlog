@@ -229,26 +229,36 @@
   }
   .search-input::placeholder{ color:var(--ink-faint); }
 
-  .group-header{
-    display:flex; align-items:center; justify-content:space-between; gap:6px;
-    width:100%;
+  .status-tabs{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin:10px 8px 14px;
+  }
+  .status-tabs button{
+    font-family:var(--font-mono);
+    font-size:.66rem;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding:6px 11px;
+    border-radius:100px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .status-tabs button:hover:not(.active){ border-color:var(--accent); color:var(--ink); }
+  .status-tabs button.active{
+    background:var(--accent-solid); color:#fff; border-color:var(--accent-solid);
+  }
+
+  .search-group-label{
     font-family:var(--font-mono);
     font-size:.65rem;
     letter-spacing:.1em;
     text-transform:uppercase;
     color:var(--ink-faint);
-    background:transparent; border:none;
-    margin:18px 0 6px; padding:6px 8px;
-    border-radius:var(--radius-s);
-    cursor:pointer;
+    margin:18px 8px 6px;
   }
-  .group-header:hover{ background:var(--surface); color:var(--ink); }
-  .group-header:first-child{ margin-top:10px; }
-  .group-header .chevron{
-    width:14px; height:14px; flex:none;
-    transition:transform .15s ease;
-  }
-  .group-header.collapsed .chevron{ transform:rotate(-90deg); }
+  .search-group-label:first-child{ margin-top:10px; }
 
   .game-card{
     display:flex; flex-direction:column; gap:5px;
@@ -781,23 +791,18 @@
   if(!state.selected && state.games.length){ state.selected = state.games[0].id; }
   var searchQuery = "";
 
-  var COLLAPSE_KEY = "questlog.collapsedGroups";
-  function loadCollapsed(){
+  var TAB_KEY = "questlog.libraryTab";
+  function loadLibraryTab(){
     try{
-      var raw = localStorage.getItem(COLLAPSE_KEY);
-      if(raw) return JSON.parse(raw);
+      var v = localStorage.getItem(TAB_KEY);
+      if(v && GROUP_ORDER.indexOf(v) !== -1) return v;
     }catch(e){}
-    var d = {};
-    GROUP_ORDER.forEach(function(k){ d[k] = true; });
-    return d;
+    return GROUP_ORDER[0];
   }
-  function saveCollapsed(){
-    try{ localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsedGroups)); }catch(e){}
+  function saveLibraryTab(){
+    try{ localStorage.setItem(TAB_KEY, libraryTab); }catch(e){}
   }
-  var collapsedGroups = loadCollapsed();
-  function chevronIcon(){
-    return '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
-  }
+  var libraryTab = loadLibraryTab();
 
   function getGame(id){
     for(var i=0;i<state.games.length;i++){ if(state.games[i].id===id) return state.games[i]; }
@@ -893,6 +898,17 @@
   }
 
   /* ---------- Library / sidebar list ---------- */
+  function gameCardHtml(g){
+    var meta = STATUS_META[g.status];
+    var active = (state.view==='library' && g.id===state.selected);
+    return '<button class="game-card'+(active?' active':'')+'" data-id="'+g.id+'">'+
+      '<div class="row1"><span class="dot" style="background:'+meta.color+'"></span>'+
+      (g.favorite ? tinyStar() : '') +
+      '<span class="title">'+esc(g.title)+'</span></div>'+
+      '<div class="meta">'+esc(g.platform||"—")+(g.hours?' · '+g.hours+' Std.':'')+(g.rating?' · '+g.rating+'/5':'')+'</div>'+
+    '</button>';
+  }
+
   function renderLibrary(){
     var el = document.getElementById('libraryList');
 
@@ -915,38 +931,44 @@
 
     var isSearching = !!q;
     var html = "";
-    GROUP_ORDER.forEach(function(key){
-      var list = byStatus[key];
-      if(!list.length) return;
-      var isOpen = isSearching || !collapsedGroups[key];
-      html += '<button class="group-header'+(isOpen?'':' collapsed')+'" data-group="'+key+'" aria-expanded="'+isOpen+'">'+
-        '<span>'+STATUS_META[key].label+' ('+list.length+')</span>'+chevronIcon()+
-      '</button>';
-      if(!isOpen) return;
-      list.forEach(function(g){
-        var meta = STATUS_META[g.status];
-        var active = (state.view==='library' && g.id===state.selected);
-        html += '<button class="game-card'+(active?' active':'')+'" data-id="'+g.id+'">'+
-          '<div class="row1"><span class="dot" style="background:'+meta.color+'"></span>'+
-          (g.favorite ? tinyStar() : '') +
-          '<span class="title">'+esc(g.title)+'</span></div>'+
-          '<div class="meta">'+esc(g.platform||"—")+(g.hours?' · '+g.hours+' Std.':'')+(g.rating?' · '+g.rating+'/5':'')+'</div>'+
+
+    if(isSearching){
+      GROUP_ORDER.forEach(function(key){
+        var list = byStatus[key];
+        if(!list.length) return;
+        html += '<div class="search-group-label">'+STATUS_META[key].label+' ('+list.length+')</div>';
+        list.forEach(function(g){ html += gameCardHtml(g); });
+      });
+    } else {
+      html += '<div class="status-tabs">';
+      GROUP_ORDER.forEach(function(key){
+        html += '<button data-tab="'+key+'" class="'+(key===libraryTab?'active':'')+'">'+
+          STATUS_META[key].label+' ('+byStatus[key].length+')'+
         '</button>';
       });
-    });
+      html += '</div>';
+      var activeList = byStatus[libraryTab] || [];
+      if(!activeList.length){
+        html += '<div class="empty-lib">Keine Spiele in „'+STATUS_META[libraryTab].label+'".</div>';
+      } else {
+        activeList.forEach(function(g){ html += gameCardHtml(g); });
+      }
+    }
+
     el.innerHTML = html;
     Array.prototype.forEach.call(el.querySelectorAll('.game-card'), function(btn){
       btn.addEventListener('click', function(){
         state.view = "library";
         state.selected = btn.getAttribute('data-id');
+        var g = getGame(state.selected);
+        if(g){ libraryTab = g.status; saveLibraryTab(); }
         save(); renderAll();
       });
     });
-    Array.prototype.forEach.call(el.querySelectorAll('.group-header'), function(btn){
+    Array.prototype.forEach.call(el.querySelectorAll('.status-tabs button'), function(btn){
       btn.addEventListener('click', function(){
-        var key = btn.getAttribute('data-group');
-        collapsedGroups[key] = !collapsedGroups[key];
-        saveCollapsed();
+        libraryTab = btn.getAttribute('data-tab');
+        saveLibraryTab();
         renderLibrary();
       });
     });
