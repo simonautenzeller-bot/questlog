@@ -295,6 +295,33 @@
   .empty-lib{
     padding:20px 10px; color:var(--ink-faint); font-size:.85rem;
   }
+  .game-card .thumb{
+    width:30px; height:30px; border-radius:6px; object-fit:cover; flex:none;
+    background:var(--surface-2);
+  }
+
+  /* ---------- Cover art (RAWG) ---------- */
+  .cover-banner{
+    width:100%; height:180px; object-fit:cover;
+    border-radius:var(--radius-m); border:1px solid var(--border-soft);
+    margin-bottom:20px; display:block; background:var(--surface-2);
+  }
+  .cover-current{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .cover-current img{ width:52px; height:52px; object-fit:cover; border-radius:6px; background:var(--surface-2); }
+  .cover-current .cc-name{ font-family:var(--font-body); font-size:.85rem; color:var(--ink-soft); }
+  .cover-results{ display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; margin-top:14px; }
+  .cover-result{
+    display:flex; align-items:center; gap:10px; padding:8px;
+    border:1px solid var(--border); border-radius:var(--radius-s);
+    background:var(--bg); cursor:pointer; text-align:left; width:100%;
+    font-family:inherit;
+  }
+  .cover-result:hover{ border-color:var(--accent); }
+  .cover-result img{ width:46px; height:46px; object-fit:cover; border-radius:4px; flex:none; background:var(--surface-2); }
+  .cover-result .cr-name{ font-family:var(--font-display); font-weight:600; font-size:.86rem; color:var(--ink); }
+  .cover-result .cr-year{ font-family:var(--font-mono); font-size:.68rem; color:var(--ink-faint); }
+  .cover-hint{ font-family:var(--font-mono); font-size:.7rem; color:var(--ink-faint); margin-top:4px; }
+  .cover-status{ color:var(--ink-faint); font-size:.85rem; padding:10px 0; }
 
   /* ---------- Main ---------- */
   main{ padding:32px 40px 60px; max-width:840px; }
@@ -663,6 +690,14 @@
         <span class="unit">Std.</span>
       </div>
     </div>
+    <div class="field">
+      <label>Cover</label>
+      <div class="cover-current" id="addCoverPreview" hidden>
+        <img id="addCoverImg" alt="">
+        <span class="cc-name" id="addCoverName"></span>
+      </div>
+      <button type="button" class="settings-btn" id="addCoverSearchBtn">Cover suchen (RAWG)</button>
+    </div>
     <div class="modal-actions">
       <button class="ghost-btn" id="cancelAdd">Abbrechen</button>
       <button class="primary-btn" id="confirmAdd">Anlegen</button>
@@ -695,12 +730,40 @@
     </div>
 
     <div class="settings-section">
+      <h4>Cover-Art (RAWG)</h4>
+      <div class="field">
+        <label for="rawgKeyInput">API-Key</label>
+        <input id="rawgKeyInput" type="text" placeholder="dein RAWG API-Key">
+      </div>
+      <div class="notes-hint">Kostenlosen Key auf <a href="https://rawg.io/apidocs" target="_blank" rel="noopener" style="color:var(--accent-strong)">rawg.io/apidocs</a> holen. Damit kannst du bei jedem Spiel (auch nachträglich, über den Cover-Button im Spiel) ein Cover suchen und zuweisen.</div>
+    </div>
+
+    <div class="settings-section">
       <h4>Über</h4>
       <div class="version-line">Questlog · Version <b id="versionText"></b></div>
     </div>
 
     <div class="modal-actions">
       <button class="ghost-btn" id="closeSettings">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="coverOverlay" hidden>
+  <div class="modal wide">
+    <h3>Cover suchen</h3>
+    <div class="field">
+      <label for="coverSearchInput">Suchbegriff</label>
+      <div class="inline" style="width:100%">
+        <input id="coverSearchInput" type="text" placeholder="Spieltitel" style="flex:1">
+        <button type="button" class="settings-btn" id="coverSearchBtn" style="flex:none">Suchen</button>
+      </div>
+      <div class="cover-hint" id="coverHint"></div>
+    </div>
+    <div class="cover-results" id="coverResults"></div>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="clearCoverBtn">Cover entfernen</button>
+      <button class="ghost-btn" id="cancelCover">Schließen</button>
     </div>
   </div>
 </div>
@@ -804,6 +867,30 @@
   }
   var libraryTab = loadLibraryTab();
 
+  /* ---------- RAWG cover-art integration ---------- */
+  var RAWG_KEY_STORAGE = "questlog.rawgKey";
+  function loadRawgKey(){
+    try{ return localStorage.getItem(RAWG_KEY_STORAGE) || ""; }catch(e){ return ""; }
+  }
+  function saveRawgKey(k){
+    try{ localStorage.setItem(RAWG_KEY_STORAGE, k); }catch(e){}
+  }
+  var rawgKey = loadRawgKey();
+
+  function rawgSearch(query){
+    query = (query||"").trim();
+    if(!rawgKey || !query) return Promise.resolve([]);
+    var url = "https://api.rawg.io/api/games?key="+encodeURIComponent(rawgKey)+"&search="+encodeURIComponent(query)+"&page_size=8";
+    return fetch(url)
+      .then(function(r){ if(!r.ok) throw new Error("rawg-error"); return r.json(); })
+      .then(function(data){
+        return (data.results||[]).map(function(g){
+          return { id:g.id, name:g.name, year:(g.released||"").slice(0,4), cover:g.background_image||"" };
+        });
+      })
+      .catch(function(){ return null; });
+  }
+
   function getGame(id){
     for(var i=0;i<state.games.length;i++){ if(state.games[i].id===id) return state.games[i]; }
     return null;
@@ -902,7 +989,9 @@
     var meta = STATUS_META[g.status];
     var active = (state.view==='library' && g.id===state.selected);
     return '<button class="game-card'+(active?' active':'')+'" data-id="'+g.id+'">'+
-      '<div class="row1"><span class="dot" style="background:'+meta.color+'"></span>'+
+      '<div class="row1">'+
+      (g.coverUrl ? '<img class="thumb" src="'+esc(g.coverUrl)+'" alt="" loading="lazy" onerror="this.remove()">' : '')+
+      '<span class="dot" style="background:'+meta.color+'"></span>'+
       (g.favorite ? tinyStar() : '') +
       '<span class="title">'+esc(g.title)+'</span></div>'+
       '<div class="meta">'+esc(g.platform||"—")+(g.hours?' · '+g.hours+' Std.':'')+(g.rating?' · '+g.rating+'/5':'')+'</div>'+
@@ -999,8 +1088,13 @@
     }
     flames += '</div>';
 
+    var coverBanner = g.coverUrl
+      ? '<img class="cover-banner" src="'+esc(g.coverUrl)+'" alt="" loading="lazy" onerror="this.remove()">'
+      : '';
+
     main.innerHTML =
       seedNote+
+      coverBanner+
       '<div class="game-head">'+
         '<div>'+
           '<input class="title-input" id="titleInput" type="text" value="'+esc(g.title)+'" aria-label="Titel">'+
@@ -1014,6 +1108,7 @@
           '</div>'+
         '</div>'+
         '<div class="icon-group">'+
+          '<button class="icon-btn" id="findCover" title="Cover suchen (RAWG)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5.5-5.5L5 21"/></svg></button>'+
           '<button class="icon-btn'+(g.favorite?' fav-active':'')+'" id="toggleFavorite" title="'+(g.favorite?'Favorit entfernen':'Als Favorit markieren')+'"><svg viewBox="0 0 24 24" class="'+(g.favorite?'star-on':'star-off')+'">'+starIcon()+'</svg></button>'+
           '<button class="icon-btn" id="deleteGame" title="Spiel löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a2 2 0 0 1-2 1.9H9.8a2 2 0 0 1-2-1.9L7 7"/></svg></button>'+
         '</div>'+
@@ -1058,6 +1153,9 @@
     });
     document.getElementById('toggleFavorite').addEventListener('click', function(){
       g.favorite = !g.favorite; save(); renderAll();
+    });
+    document.getElementById('findCover').addEventListener('click', function(){
+      openCoverPicker(g.id, g.title);
     });
     document.getElementById('deleteGame').addEventListener('click', function(){
       if(!confirm('„'+g.title+'" wirklich aus dem Questlog löschen?')) return;
@@ -1239,6 +1337,19 @@
     renderAddFavorite();
   });
 
+  var addCoverUrl = "";
+  var addRawgId = null;
+  function renderAddCoverPreview(){
+    var wrap = document.getElementById('addCoverPreview');
+    if(addCoverUrl){
+      document.getElementById('addCoverImg').src = addCoverUrl;
+      document.getElementById('addCoverName').textContent = "Cover ausgewählt";
+      wrap.hidden = false;
+    } else {
+      wrap.hidden = true;
+    }
+  }
+
   var overlay = document.getElementById('overlay');
   document.getElementById('openAdd').addEventListener('click', function(){
     document.getElementById('fTitle').value="";
@@ -1247,13 +1358,19 @@
     document.getElementById('fHours').value="0";
     addRating = 0;
     addFavorite = false;
+    addCoverUrl = "";
+    addRawgId = null;
     renderAddFlames();
     renderAddFavorite();
+    renderAddCoverPreview();
     overlay.hidden = false;
     document.getElementById('fTitle').focus();
   });
   document.getElementById('cancelAdd').addEventListener('click', function(){ overlay.hidden = true; });
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.hidden = true; });
+  document.getElementById('addCoverSearchBtn').addEventListener('click', function(){
+    openCoverPicker('add', document.getElementById('fTitle').value);
+  });
   document.getElementById('confirmAdd').addEventListener('click', function(){
     var title = document.getElementById('fTitle').value.trim();
     if(!title){ document.getElementById('fTitle').focus(); return; }
@@ -1265,7 +1382,9 @@
       rating:addRating,
       hours: isNaN(hoursVal) ? 0 : Math.max(0, hoursVal),
       favorite:addFavorite,
-      notes:""
+      notes:"",
+      coverUrl:addCoverUrl,
+      rawgId:addRawgId
     };
     state.games.unshift(ng);
     state.view = "library";
@@ -1277,9 +1396,16 @@
   /* ---------- Settings modal ---------- */
   document.getElementById('versionText').textContent = APP_VERSION;
   var settingsOverlay = document.getElementById('settingsOverlay');
-  document.getElementById('openSettings').addEventListener('click', function(){ settingsOverlay.hidden = false; });
+  document.getElementById('openSettings').addEventListener('click', function(){
+    document.getElementById('rawgKeyInput').value = rawgKey;
+    settingsOverlay.hidden = false;
+  });
   document.getElementById('closeSettings').addEventListener('click', function(){ settingsOverlay.hidden = true; });
   settingsOverlay.addEventListener('click', function(e){ if(e.target===settingsOverlay) settingsOverlay.hidden = true; });
+  document.getElementById('rawgKeyInput').addEventListener('change', function(e){
+    rawgKey = e.target.value.trim();
+    saveRawgKey(rawgKey);
+  });
 
   document.getElementById('exportData').addEventListener('click', function(){
     try{
@@ -1320,10 +1446,81 @@
     e.target.value = "";
   });
 
+  /* ---------- Cover picker (RAWG) ---------- */
+  var coverOverlay = document.getElementById('coverOverlay');
+  var coverPickerTarget = null; // 'add' or a game id
+
+  function openCoverPicker(target, presetQuery){
+    coverPickerTarget = target;
+    document.getElementById('coverSearchInput').value = presetQuery || "";
+    document.getElementById('coverResults').innerHTML = "";
+    document.getElementById('coverHint').textContent = rawgKey ? "" : "Kein RAWG API-Key hinterlegt — in den Einstellungen ergänzen.";
+    coverOverlay.hidden = false;
+    if(rawgKey && presetQuery) doCoverSearch(presetQuery);
+  }
+
+  function renderCoverResults(list){
+    var el = document.getElementById('coverResults');
+    if(list === null){
+      el.innerHTML = '<div class="cover-status">Fehler bei der RAWG-Abfrage. API-Key prüfen oder später erneut versuchen.</div>';
+      return;
+    }
+    if(!list.length){
+      el.innerHTML = '<div class="cover-status">Keine Treffer.</div>';
+      return;
+    }
+    el.innerHTML = list.map(function(r){
+      return '<button type="button" class="cover-result" data-id="'+r.id+'" data-cover="'+esc(r.cover)+'">'+
+        (r.cover ? '<img src="'+esc(r.cover)+'" alt="" loading="lazy">' : '<span style="width:46px;height:46px;display:block;border-radius:4px;background:var(--surface-2);flex:none"></span>')+
+        '<span><span class="cr-name">'+esc(r.name)+'</span><br><span class="cr-year">'+esc(r.year||'')+'</span></span>'+
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('.cover-result'), function(btn){
+      btn.addEventListener('click', function(){
+        applyCover(btn.getAttribute('data-id'), btn.getAttribute('data-cover'));
+      });
+    });
+  }
+
+  function applyCover(rawgIdVal, coverUrlVal){
+    rawgIdVal = rawgIdVal ? parseInt(rawgIdVal, 10) : null;
+    if(coverPickerTarget === 'add'){
+      addRawgId = rawgIdVal;
+      addCoverUrl = coverUrlVal || "";
+      renderAddCoverPreview();
+    } else {
+      var g = getGame(coverPickerTarget);
+      if(g){
+        g.rawgId = rawgIdVal;
+        g.coverUrl = coverUrlVal || "";
+        save(); renderAll();
+      }
+    }
+    coverOverlay.hidden = true;
+  }
+
+  function doCoverSearch(query){
+    document.getElementById('coverResults').innerHTML = '<div class="cover-status">Suche läuft …</div>';
+    rawgSearch(query).then(renderCoverResults);
+  }
+
+  document.getElementById('coverSearchBtn').addEventListener('click', function(){
+    doCoverSearch(document.getElementById('coverSearchInput').value);
+  });
+  document.getElementById('coverSearchInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); doCoverSearch(e.target.value); }
+  });
+  document.getElementById('clearCoverBtn').addEventListener('click', function(){
+    applyCover(null, "");
+  });
+  document.getElementById('cancelCover').addEventListener('click', function(){ coverOverlay.hidden = true; });
+  coverOverlay.addEventListener('click', function(e){ if(e.target===coverOverlay) coverOverlay.hidden = true; });
+
   document.addEventListener('keydown', function(e){
     if(e.key!=='Escape') return;
     if(!overlay.hidden) overlay.hidden = true;
     if(!settingsOverlay.hidden) settingsOverlay.hidden = true;
+    if(!coverOverlay.hidden) coverOverlay.hidden = true;
   });
 
   renderAll();
