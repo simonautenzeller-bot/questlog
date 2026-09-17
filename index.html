@@ -604,12 +604,16 @@
       <select id="fPlatform">
         <option value="">– keine Angabe –</option>
         <option value="Gameboy">Gameboy</option>
-        <option value="Gameboy 3DS">Gameboy 3DS</option>
+        <option value="Gameboy Advance">Gameboy Advance</option>
+        <option value="Nintendo 3DS">Nintendo 3DS</option>
+        <option value="Nintendo 64">Nintendo 64</option>
         <option value="PC">PC</option>
         <option value="PS4">PS4</option>
         <option value="PS5">PS5</option>
         <option value="Switch">Switch</option>
         <option value="Switch 2">Switch 2</option>
+        <option value="Wii">Wii</option>
+        <option value="XBox">XBox</option>
       </select>
     </div>
     <div class="field">
@@ -708,7 +712,7 @@
       return a.title.localeCompare(b.title, 'de', {sensitivity:'base'});
     });
   }
-  var PLATFORMS = ["Gameboy","Gameboy 3DS","PC","PS4","PS5","Switch","Switch 2"];
+  var PLATFORMS = ["Gameboy","Gameboy Advance","Nintendo 3DS","Nintendo 64","PC","PS4","PS5","Switch","Switch 2","Wii","XBox"];
   function platformOptionsHtml(selected){
     var html = '<option value=""'+(selected===""?' selected':'')+'>– keine Angabe –</option>';
     var found = false;
