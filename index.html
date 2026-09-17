@@ -326,6 +326,45 @@
     font-family:var(--font-mono); font-size:.72rem; color:var(--ink-faint);
     margin-top:6px;
   }
+  .rawg-badges{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .pill.mc-good{ border-color:var(--st-played); color:var(--st-played); }
+  .pill.mc-mid{ border-color:var(--accent); color:var(--accent-strong); }
+  .pill.mc-low{ border-color:var(--st-dropped); color:var(--st-dropped); }
+  .pill.esrb{ color:var(--ink-soft); }
+
+  .details-toggle{
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--font-mono); font-size:.7rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-faint); background:none; border:none; cursor:pointer; padding:0; margin:18px 0 10px;
+  }
+  .details-toggle:hover{ color:var(--ink); }
+  .details-toggle .chevron{ width:12px; height:12px; flex:none; transition:transform .15s ease; }
+  .details-toggle.open .chevron{ transform:rotate(90deg); }
+
+  .details-panel{
+    border-top:1px solid var(--border-soft); padding-top:16px; margin-bottom:20px;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .details-block-label{
+    font-family:var(--font-mono); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:8px; display:block;
+  }
+  .chip-list{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{
+    font-family:var(--font-mono); font-size:.66rem; letter-spacing:.03em; text-transform:uppercase;
+    padding:4px 9px; border-radius:100px; border:1px solid var(--border-soft);
+    background:var(--surface); color:var(--ink-soft);
+  }
+  .rawg-description{
+    font-family:var(--font-body); font-size:.88rem; line-height:1.6; color:var(--ink-soft);
+    white-space:pre-line; max-height:240px; overflow-y:auto;
+  }
+  .bulk-status{
+    font-family:var(--font-mono); font-size:.72rem; line-height:1.6; color:var(--ink-soft);
+    max-height:160px; overflow-y:auto; margin-top:10px;
+    border:1px solid var(--border-soft); border-radius:var(--radius-s);
+    padding:8px 10px; background:var(--bg);
+  }
 
   /* ---------- Main ---------- */
   main{ padding:32px 40px 60px; max-width:840px; }
@@ -740,6 +779,9 @@
         <input id="rawgKeyInput" type="text" placeholder="dein RAWG API-Key">
       </div>
       <div class="notes-hint">Kostenlosen Key auf <a href="https://rawg.io/apidocs" target="_blank" rel="noopener" style="color:var(--accent-strong)">rawg.io/apidocs</a> holen. Damit kannst du bei jedem Spiel (auch nachträglich, über den Cover-Button im Spiel) ein Cover suchen und zuweisen.</div>
+      <button type="button" class="settings-btn" id="bulkFetchBtn" style="width:100%; margin-top:10px;">Alle fehlenden Cover automatisch abrufen</button>
+      <div class="notes-hint">Nimmt pro Spiel den ersten RAWG-Treffer — bei uneindeutigen Titeln lieber einzeln über den Cover-Button prüfen. Spiele mit bereits gesetztem Cover werden übersprungen.</div>
+      <div class="bulk-status" id="bulkFetchStatus" hidden></div>
     </div>
 
     <div class="settings-section">
@@ -870,6 +912,7 @@
     try{ localStorage.setItem(TAB_KEY, libraryTab); }catch(e){}
   }
   var libraryTab = loadLibraryTab();
+  var detailsOpenFor = {};
 
   /* ---------- RAWG cover-art integration ---------- */
   var RAWG_KEY_STORAGE = "questlog.rawgKey";
@@ -905,7 +948,12 @@
           releaseYear: (data.released||"").slice(0,4),
           genres: (data.genres||[]).map(function(x){ return x.name; }),
           developers: (data.developers||[]).map(function(x){ return x.name; }),
-          publishers: (data.publishers||[]).map(function(x){ return x.name; })
+          publishers: (data.publishers||[]).map(function(x){ return x.name; }),
+          metacritic: data.metacritic || null,
+          esrbRating: data.esrb_rating ? data.esrb_rating.name : "",
+          description: data.description_raw || "",
+          tags: (data.tags||[]).map(function(x){ return x.name; }),
+          rawgPlatforms: (data.platforms||[]).map(function(x){ return x.platform && x.platform.name; }).filter(Boolean)
         };
       })
       .catch(function(){ return null; });
@@ -931,6 +979,14 @@
   }
   function tinyStar(){
     return '<svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:var(--accent);stroke:var(--accent-strong);stroke-width:1;vertical-align:-1px;margin-right:3px;flex:none">'+starIcon()+'</svg>';
+  }
+  function chevronIcon(){
+    return '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  }
+  function metacriticClass(score){
+    if(score>=75) return 'mc-good';
+    if(score>=50) return 'mc-mid';
+    return 'mc-low';
   }
 
   /* ---------- Theme ---------- */
@@ -1119,6 +1175,35 @@
     if(g.genres && g.genres.length) metaBits.push(g.genres.join(', '));
     var metaLine = metaBits.length ? '<div class="rawg-meta">'+metaBits.map(esc).join(' · ')+'</div>' : '';
 
+    var badges = [];
+    if(g.metacritic) badges.push('<span class="pill '+metacriticClass(g.metacritic)+'">Metacritic '+g.metacritic+'</span>');
+    if(g.esrbRating) badges.push('<span class="pill esrb">'+esc(g.esrbRating)+'</span>');
+    var badgesRow = badges.length ? '<div class="rawg-badges">'+badges.join('')+'</div>' : '';
+
+    var hasDetails = (g.tags && g.tags.length) || (g.rawgPlatforms && g.rawgPlatforms.length) || g.description;
+    var detailsOpen = !!detailsOpenFor[g.id];
+    var detailsToggle = hasDetails
+      ? '<button type="button" class="details-toggle'+(detailsOpen?' open':'')+'" id="detailsToggle">'+chevronIcon()+'<span>Weitere Infos</span></button>'
+      : '';
+    var detailsPanel = '';
+    if(hasDetails && detailsOpen){
+      var blocks = '';
+      if(g.rawgPlatforms && g.rawgPlatforms.length){
+        blocks += '<div><span class="details-block-label">Plattformen (RAWG)</span><div class="chip-list">'+
+          g.rawgPlatforms.map(function(p){ return '<span class="chip">'+esc(p)+'</span>'; }).join('')+
+        '</div></div>';
+      }
+      if(g.tags && g.tags.length){
+        blocks += '<div><span class="details-block-label">Tags</span><div class="chip-list">'+
+          g.tags.slice(0,12).map(function(t){ return '<span class="chip">'+esc(t)+'</span>'; }).join('')+
+        '</div></div>';
+      }
+      if(g.description){
+        blocks += '<div><span class="details-block-label">Beschreibung</span><div class="rawg-description">'+esc(g.description)+'</div></div>';
+      }
+      detailsPanel = '<div class="details-panel">'+blocks+'</div>';
+    }
+
     main.innerHTML =
       seedNote+
       coverBanner+
@@ -1134,6 +1219,7 @@
             '</select>'+
           '</div>'+
           metaLine+
+          badgesRow+
         '</div>'+
         '<div class="icon-group">'+
           '<button class="icon-btn" id="findCover" title="Cover suchen (RAWG)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5.5-5.5L5 21"/></svg></button>'+
@@ -1148,7 +1234,9 @@
       '</div>'+
       '<label class="notes-label" for="notesArea">Notizen (optional)</label>'+
       '<textarea class="notes-area" id="notesArea" placeholder="Build, Fortschritt, Eindruck, was auch immer hängen bleiben soll …">'+esc(g.notes)+'</textarea>'+
-      '<div class="notes-hint">Wird automatisch gespeichert.</div>';
+      '<div class="notes-hint">Wird automatisch gespeichert.</div>'+
+      detailsToggle+
+      detailsPanel;
 
     wireGamePanelEvents(g);
   }
@@ -1184,6 +1272,11 @@
     });
     document.getElementById('findCover').addEventListener('click', function(){
       openCoverPicker(g.id, g.title);
+    });
+    var detailsToggleBtn = document.getElementById('detailsToggle');
+    if(detailsToggleBtn) detailsToggleBtn.addEventListener('click', function(){
+      detailsOpenFor[g.id] = !detailsOpenFor[g.id];
+      renderAll();
     });
     document.getElementById('deleteGame').addEventListener('click', function(){
       if(!confirm('„'+g.title+'" wirklich aus dem Questlog löschen?')) return;
@@ -1255,6 +1348,8 @@
     var totalHours = games.reduce(function(s,g){ return s+(g.hours||0); }, 0);
     var rated = games.filter(function(g){ return g.rating>0; });
     var avgRating = rated.length ? (rated.reduce(function(s,g){ return s+g.rating; },0)/rated.length) : null;
+    var mcRated = games.filter(function(g){ return g.metacritic; });
+    var avgMetacritic = mcRated.length ? Math.round(mcRated.reduce(function(s,g){ return s+g.metacritic; },0)/mcRated.length) : null;
 
     var kpis = [
       { label:"Spiele gesamt", value:games.length },
@@ -1262,7 +1357,8 @@
       { label:"Warteliste", value:countWishlist },
       { label:"Favoriten", value:countFavorites },
       { label:"Spielzeit gesamt", value:totalHours+" Std." },
-      { label:"Ø Bewertung", value: avgRating!==null ? avgRating.toFixed(1)+" / 5" : "–" }
+      { label:"Ø Bewertung", value: avgRating!==null ? avgRating.toFixed(1)+" / 5" : "–" },
+      { label:"Ø Metacritic", value: avgMetacritic!==null ? avgMetacritic : "–" }
     ];
     var kpiHtml = kpis.map(function(k){
       return '<div class="kpi-tile"><span class="label">'+k.label+'</span><span class="value">'+k.value+'</span></div>';
@@ -1327,6 +1423,25 @@
       ? pubEntries.slice(0,8).map(function(e){ return barRow(esc(e[0]), e[1], pubMax, 'var(--st-paused)', e[1]); }).join('')
       : '<div class="empty-state">Noch keine Publisher-Daten — Cover über RAWG zuweisen.</div>';
 
+    var tagEntries = countArrayField(games, 'tags');
+    var tagMax = tagEntries.length ? tagEntries[0][1] : 1;
+    var tagHtml = tagEntries.length
+      ? tagEntries.slice(0,8).map(function(e){ return barRow(esc(e[0]), e[1], tagMax, 'var(--accent)', e[1]); }).join('')
+      : '<div class="empty-state">Noch keine Tag-Daten — Cover über RAWG zuweisen.</div>';
+
+    var esrbCounts = {};
+    games.forEach(function(g){
+      var e = (g.esrbRating||"").trim();
+      if(!e) return;
+      esrbCounts[e] = (esrbCounts[e]||0) + 1;
+    });
+    var esrbEntries = Object.keys(esrbCounts).map(function(k){ return [k, esrbCounts[k]]; })
+      .sort(function(a,b){ return b[1]-a[1]; });
+    var esrbMax = esrbEntries.length ? esrbEntries[0][1] : 1;
+    var esrbHtml = esrbEntries.length
+      ? esrbEntries.map(function(e){ return barRow(esc(e[0]), e[1], esrbMax, 'var(--st-dropped)', e[1]); }).join('')
+      : '<div class="empty-state">Noch keine Alterseinstufungs-Daten — Cover über RAWG zuweisen.</div>';
+
     var favoriteGames = sortByTitle(games.filter(function(g){ return g.favorite; }));
     var favoritesHtml = favoriteGames.length
       ? favoriteGames.map(function(g){
@@ -1342,6 +1457,8 @@
       section('Meistgespielt', '<div class="barlist">'+hoursHtml+'</div>')+
       section('Plattformen', '<div class="barlist">'+platformHtml+'</div>')+
       section('Genres', '<div class="barlist">'+genreHtml+'</div>')+
+      section('Tags', '<div class="barlist">'+tagHtml+'</div>')+
+      section('Alterseinstufung', '<div class="barlist">'+esrbHtml+'</div>')+
       section('Entwickler', '<div class="barlist">'+devHtml+'</div>')+
       section('Publisher', '<div class="barlist">'+pubHtml+'</div>')+
       section('Lieblingsspiele', '<div class="barlist">'+favoritesHtml+'</div>');
@@ -1404,6 +1521,11 @@
   var addGenres = [];
   var addDevelopers = [];
   var addPublishers = [];
+  var addMetacritic = null;
+  var addEsrbRating = "";
+  var addDescription = "";
+  var addTags = [];
+  var addRawgPlatforms = [];
   function renderAddCoverPreview(){
     var wrap = document.getElementById('addCoverPreview');
     if(addCoverUrl){
@@ -1428,6 +1550,8 @@
     addRawgId = null;
     addReleaseYear = "";
     addGenres = []; addDevelopers = []; addPublishers = [];
+    addMetacritic = null; addEsrbRating = ""; addDescription = "";
+    addTags = []; addRawgPlatforms = [];
     renderAddFlames();
     renderAddFavorite();
     renderAddCoverPreview();
@@ -1456,7 +1580,12 @@
       releaseYear:addReleaseYear,
       genres:addGenres,
       developers:addDevelopers,
-      publishers:addPublishers
+      publishers:addPublishers,
+      metacritic:addMetacritic,
+      esrbRating:addEsrbRating,
+      description:addDescription,
+      tags:addTags,
+      rawgPlatforms:addRawgPlatforms
     };
     state.games.unshift(ng);
     state.view = "library";
@@ -1562,6 +1691,8 @@
       addCoverUrl = coverUrlVal || "";
       addReleaseYear = "";
       addGenres = []; addDevelopers = []; addPublishers = [];
+      addMetacritic = null; addEsrbRating = ""; addDescription = "";
+      addTags = []; addRawgPlatforms = [];
       renderAddCoverPreview();
     } else {
       var g = getGame(target);
@@ -1570,6 +1701,8 @@
         g.coverUrl = coverUrlVal || "";
         g.releaseYear = "";
         g.genres = []; g.developers = []; g.publishers = [];
+        g.metacritic = null; g.esrbRating = ""; g.description = "";
+        g.tags = []; g.rawgPlatforms = [];
         if(nameVal) g.title = nameVal;
         save(); renderAll();
       }
@@ -1584,6 +1717,11 @@
           addGenres = details.genres;
           addDevelopers = details.developers;
           addPublishers = details.publishers;
+          addMetacritic = details.metacritic;
+          addEsrbRating = details.esrbRating;
+          addDescription = details.description;
+          addTags = details.tags;
+          addRawgPlatforms = details.rawgPlatforms;
           renderAddCoverPreview();
         } else {
           var g2 = getGame(target);
@@ -1592,6 +1730,11 @@
             g2.genres = details.genres;
             g2.developers = details.developers;
             g2.publishers = details.publishers;
+            g2.metacritic = details.metacritic;
+            g2.esrbRating = details.esrbRating;
+            g2.description = details.description;
+            g2.tags = details.tags;
+            g2.rawgPlatforms = details.rawgPlatforms;
             save(); renderAll();
           }
         }
@@ -1615,6 +1758,62 @@
   });
   document.getElementById('cancelCover').addEventListener('click', function(){ coverOverlay.hidden = true; });
   coverOverlay.addEventListener('click', function(e){ if(e.target===coverOverlay) coverOverlay.hidden = true; });
+
+  /* ---------- Bulk cover fetch (RAWG) ---------- */
+  function bulkFetchCovers(){
+    var statusEl = document.getElementById('bulkFetchStatus');
+    var btn = document.getElementById('bulkFetchBtn');
+    if(!rawgKey){
+      statusEl.hidden = false;
+      statusEl.innerHTML = '<div>Kein RAWG API-Key hinterlegt.</div>';
+      return;
+    }
+    var targets = state.games.filter(function(g){ return !g.coverUrl; });
+    statusEl.hidden = false;
+    statusEl.innerHTML = '';
+    if(!targets.length){
+      statusEl.innerHTML = '<div>Alle Spiele haben bereits ein Cover.</div>';
+      return;
+    }
+    btn.disabled = true;
+    var i = 0;
+    function next(){
+      if(i >= targets.length){
+        save(); renderAll();
+        btn.disabled = false;
+        statusEl.innerHTML += '<div><b>Fertig: '+targets.length+' Spiele verarbeitet.</b></div>';
+        statusEl.scrollTop = statusEl.scrollHeight;
+        return;
+      }
+      var g = targets[i];
+      rawgSearch(g.title).then(function(results){
+        if(results && results.length){
+          var top = results[0];
+          g.rawgId = top.id;
+          g.coverUrl = top.cover || "";
+          return rawgGameDetails(top.id).then(function(details){
+            if(details){
+              g.releaseYear = details.releaseYear;
+              g.genres = details.genres; g.developers = details.developers; g.publishers = details.publishers;
+              g.metacritic = details.metacritic; g.esrbRating = details.esrbRating; g.description = details.description;
+              g.tags = details.tags; g.rawgPlatforms = details.rawgPlatforms;
+            }
+            statusEl.innerHTML += '<div>&#10003; '+esc(g.title)+' &rarr; '+esc(top.name)+(top.year?' ('+esc(top.year)+')':'')+'</div>';
+          });
+        } else {
+          statusEl.innerHTML += '<div>&times; '+esc(g.title)+' — kein Treffer</div>';
+        }
+      }).catch(function(){
+        statusEl.innerHTML += '<div>&times; '+esc(g.title)+' — Fehler</div>';
+      }).then(function(){
+        statusEl.scrollTop = statusEl.scrollHeight;
+        i++;
+        next();
+      });
+    }
+    next();
+  }
+  document.getElementById('bulkFetchBtn').addEventListener('click', bulkFetchCovers);
 
   document.addEventListener('keydown', function(e){
     if(e.key!=='Escape') return;
