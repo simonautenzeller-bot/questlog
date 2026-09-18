@@ -28,7 +28,7 @@
 
 <style>
   html{ color-scheme: light dark; }
-  html, body{ margin:0; padding:0; }
+  html, body{ margin:0; padding:0; width:100%; overflow-x:hidden; }
   [hidden]{ display:none !important; }
   img{ max-width:100%; }
 
@@ -139,6 +139,7 @@
     display:grid;
     grid-template-columns:290px 1fr;
     min-height:100vh;
+    max-width:100%;
   }
 
   /* ---------- Header brand mark ---------- */
@@ -359,7 +360,7 @@
   }
   .rawg-description{
     font-family:var(--font-body); font-size:.88rem; line-height:1.6; color:var(--ink-soft);
-    white-space:pre-line; max-height:240px; overflow-y:auto;
+    white-space:pre-line; max-height:240px; overflow-y:auto; overflow-wrap:anywhere;
   }
   .bulk-status{
     font-family:var(--font-mono); font-size:.72rem; line-height:1.6; color:var(--ink-soft);
@@ -383,6 +384,7 @@
     letter-spacing:-.01em;
     text-wrap:balance;
     margin:0 0 8px;
+    overflow-wrap:anywhere;
   }
   .title-input{
     display:block; width:100%; max-width:100%;
