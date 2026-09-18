@@ -1,10 +1,12 @@
-const CACHE = "questlog-v1";
+const CACHE = "questlog-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/icon-192-maskable.png",
+  "./icons/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (event) => {
