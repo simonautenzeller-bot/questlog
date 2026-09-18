@@ -8,7 +8,7 @@
     if(__t === 'light' || __t === 'dark' || __t === 'adventure') document.documentElement.setAttribute('data-theme', __t);
   }catch(e){}
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Questlog</title>
 <meta name="description" content="Spiele-Tracker: was du gespielt hast, was noch ansteht, mit Bewertung, Spielzeit und Statistik.">
 
@@ -124,12 +124,14 @@
   }
 
   *{box-sizing:border-box;}
+  html{ touch-action:manipulation; }
   body{
     background:var(--bg);
     color:var(--ink);
     font-family:var(--font-body);
     font-size:15px;
     line-height:1.5;
+    touch-action:manipulation;
   }
   ::selection{ background:var(--accent-tint); color:var(--accent-strong); }
 
@@ -147,7 +149,7 @@
   }
   .brand-title{ display:flex; align-items:center; gap:10px; min-width:0; }
   .brand-actions{ display:flex; align-items:center; gap:8px; flex:none; }
-  .brand svg{ width:28px; height:28px; flex:none; }
+  .brand svg{ width:34px; height:34px; flex:none; }
   .brand h1{
     font-family:var(--font-display);
     font-weight:700;
