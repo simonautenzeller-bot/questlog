@@ -137,10 +137,12 @@
 
   .app{
     display:grid;
-    grid-template-columns:290px 1fr;
+    grid-template-columns:290px minmax(0,1fr);
     min-height:100vh;
     max-width:100%;
   }
+  .sidebar, main{ min-width:0; }
+  .game-card .row1{ min-width:0; }
 
   /* ---------- Header brand mark ---------- */
   .brand{
@@ -603,7 +605,7 @@
   .mobile-topbar{ display:none; }
 
   @media (max-width: 760px){
-    .app{ grid-template-columns:1fr; }
+    .app{ grid-template-columns:minmax(0,1fr); }
     .sidebar{
       min-height:100vh; min-height:100dvh; border-right:none;
       padding-bottom:calc(84px + env(safe-area-inset-bottom));
@@ -882,7 +884,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.2.0";
+  var APP_VERSION = "1.2.1";
 
   var STATUS_META = {
     playing:{ label:"Am Laufen", color:"var(--st-playing)" },

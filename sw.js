@@ -1,4 +1,4 @@
-const CACHE = "questlog-v3";
+const CACHE = "questlog-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
