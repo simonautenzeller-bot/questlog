@@ -27,8 +27,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-  html{ color-scheme: light dark; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
-  html, body{ margin:0; padding:0; width:100%; overflow-x:hidden; }
+  html{ color-scheme: light dark; -webkit-text-size-adjust:100%; text-size-adjust:100%; overflow-x:hidden; }
+  html, body{ margin:0; padding:0; width:100%; }
   [hidden]{ display:none !important; }
   img{ max-width:100%; }
 
@@ -145,7 +145,7 @@
   /* ---------- Header brand mark ---------- */
   .brand{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:22px 20px 14px;
+    padding:calc(22px + env(safe-area-inset-top)) 20px 14px;
     border-bottom:1px solid var(--border-soft);
   }
   .brand-title{ display:flex; align-items:center; gap:10px; min-width:0; }
@@ -600,28 +600,88 @@
   .bottom-nav button svg{ width:22px; height:22px; stroke-width:1.8; }
   .bottom-nav button.active{ color:var(--accent-solid); }
 
+  .mobile-topbar{ display:none; }
+
   @media (max-width: 760px){
     .app{ grid-template-columns:1fr; }
-    .sidebar{ min-height:auto; border-right:none; border-bottom:1px solid var(--border-soft); }
-    .sidebar-scroll{ max-height:38vh; }
+    .sidebar{
+      min-height:100vh; min-height:100dvh; border-right:none;
+      padding-bottom:calc(84px + env(safe-area-inset-bottom));
+    }
+    .sidebar-scroll{ max-height:none; overflow:visible; flex:none; }
     #viewTabs{ display:none; }
     .bottom-nav{ display:flex; }
     main{ padding:24px 18px calc(84px + env(safe-area-inset-bottom)); }
     .game-head h2, .title-input{ font-size:1.6rem; }
     .barlist-row{ grid-template-columns:84px 1fr 52px; gap:8px; }
 
-    /* Prevent iOS auto-zoom on focus and grow touch targets */
-    input, select, textarea{ font-size:16px; }
-    .icon-btn{ width:40px; height:40px; }
-    .icon-btn svg{ width:17px; height:17px; }
-    .flames button{ padding:7px; }
-    .status-select{ padding-top:6px; padding-bottom:6px; }
+    /* Master/detail: list is one screen, game detail is another */
+    .app:not(.show-detail):not(.view-stats) main{ display:none; }
+    .app.show-detail .sidebar{ display:none; }
+    .app.view-stats .sidebar{ min-height:0; padding-bottom:0; }
+    .app.view-stats .sidebar-fixed{ display:none; }
+
+    .mobile-topbar{
+      display:flex; align-items:center;
+      position:sticky; top:0; z-index:15;
+      background:var(--bg); border-bottom:1px solid var(--border-soft);
+      margin:-24px -18px 16px; padding:env(safe-area-inset-top) 8px 0;
+    }
+    .back-btn{
+      display:flex; align-items:center; gap:4px; min-height:48px; padding:0 12px 0 6px;
+      background:none; border:none; cursor:pointer; color:var(--accent-strong);
+      font-family:var(--font-mono); font-size:.8rem; letter-spacing:.05em; text-transform:uppercase;
+    }
+    .back-btn svg{ width:22px; height:22px; }
+
+    .game-card, .game-card.active{
+      background:var(--surface); border:1px solid var(--border-soft); box-shadow:none;
+      padding:12px 14px; margin-bottom:8px;
+    }
+    .game-card:active{ background:var(--surface-2); }
+    .game-head{ flex-direction:column-reverse; gap:10px; }
+    .icon-group{ align-self:flex-end; }
+
+    /* Touch targets: 44px minimum */
+    .add-btn{ min-height:48px; font-size:.78rem; }
+    .status-tabs{ gap:8px; }
+    .status-tabs button{ min-height:44px; padding:0 16px; font-size:.75rem; }
+    .seed-banner button{ min-height:44px; font-size:.75rem; }
+    .icon-btn{ width:44px; height:44px; }
+    .icon-btn svg{ width:18px; height:18px; }
+    select.status-select{
+      min-height:44px; padding:0 32px 0 14px; letter-spacing:.03em;
+      background-position:calc(100% - 16px) 55%, calc(100% - 12px) 55%;
+    }
+    .title-input{ min-height:48px; }
+    .stat-row{ gap:14px 16px; padding:14px 16px; }
+    .flames button{ padding:11px 5px; }
+    .flames svg{ width:22px; height:22px; }
+    .hours-input{ width:64px; min-height:44px; }
+    .details-toggle{ min-height:44px; margin:8px 0; font-size:.78rem; }
+    .primary-btn, .ghost-btn, .settings-btn{ min-height:44px; font-size:.78rem; }
+    .segmented button{ min-height:44px; font-size:.75rem; }
+    .field input, .field select{ min-height:44px; }
+    .bottom-nav button{ min-height:56px; font-size:.75rem; }
+    .bottom-nav button:active{ background:var(--surface-2); }
+    .add-btn:active, .primary-btn:active, .settings-btn:active, .icon-btn:active,
+    .status-tabs button:active, .back-btn:active{ transform:scale(.97); }
+
+    /* 16px inputs prevent iOS focus-zoom */
+    .search-input, .field input, .field select, .notes-area, .hours-input, select.status-select{ font-size:16px; }
+    .search-input{ min-height:46px; }
+
+    /* Readable text: 12px minimum */
+    .brand .sub, .pill, .chip, .details-block-label, .notes-label, .notes-hint,
+    .field label, .settings-section h4, .stat .label, .kpi-tile .label,
+    .search-group-label, .cover-hint, .cover-result .cr-year{ font-size:.75rem; }
+    .totals-line, .game-card .meta, .rawg-meta, .barlist-label, .bulk-status{ font-size:.78rem; }
   }
 </style>
 </head>
 <body>
 
-<div class="app">
+<div class="app" id="app">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-title">
@@ -822,7 +882,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.1.0";
+  var APP_VERSION = "1.2.0";
 
   var STATUS_META = {
     playing:{ label:"Am Laufen", color:"var(--st-playing)" },
@@ -917,6 +977,10 @@
   }
   var libraryTab = loadLibraryTab();
   var detailsOpenFor = {};
+  var detailOpen = false;
+  var detailPushed = false;
+  var listScrollY = 0;
+  var mobileMq = window.matchMedia ? window.matchMedia('(max-width: 760px)') : null;
 
   /* ---------- RAWG cover-art integration ---------- */
   var RAWG_KEY_STORAGE = "questlog.rawgKey";
@@ -1127,11 +1191,7 @@
     el.innerHTML = html;
     Array.prototype.forEach.call(el.querySelectorAll('.game-card'), function(btn){
       btn.addEventListener('click', function(){
-        state.view = "library";
-        state.selected = btn.getAttribute('data-id');
-        var g = getGame(state.selected);
-        if(g){ libraryTab = g.status; saveLibraryTab(); }
-        save(); renderAll();
+        openDetail(btn.getAttribute('data-id'));
       });
     });
     Array.prototype.forEach.call(el.querySelectorAll('.status-tabs button'), function(btn){
@@ -1209,6 +1269,9 @@
     }
 
     main.innerHTML =
+      '<div class="mobile-topbar"><button type="button" class="back-btn" id="backToList">'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>'+
+        '<span>Alle Spiele</span></button></div>'+
       seedNote+
       coverBanner+
       '<div class="game-head">'+
@@ -1248,12 +1311,15 @@
   function wireGamePanelEvents(g){
     var main = document.getElementById('main');
 
+    document.getElementById('backToList').addEventListener('click', closeDetail);
+
     var clearSeedBtn = document.getElementById('clearSeed');
     if(clearSeedBtn) clearSeedBtn.addEventListener('click', function(){
       state.games = [];
       state.selected = null;
       state.seeded = false;
       save(); renderAll();
+      window.scrollTo(0, 0);
     });
 
     document.getElementById('statusSelect').addEventListener('change', function(e){
@@ -1286,7 +1352,10 @@
       if(!confirm('„'+g.title+'" wirklich aus dem Questlog löschen?')) return;
       state.games = state.games.filter(function(x){ return x.id!==g.id; });
       state.selected = state.games.length ? state.games[0].id : null;
-      save(); renderAll();
+      save();
+      leaveDetail();
+      renderAll();
+      window.scrollTo(0, listScrollY);
     });
     document.getElementById('hoursInput').addEventListener('change', function(e){
       var v = parseInt(e.target.value,10);
@@ -1468,17 +1537,71 @@
       section('Lieblingsspiele', '<div class="barlist">'+favoritesHtml+'</div>');
   }
 
+  function isMobileLayout(){ return !!(mobileMq && mobileMq.matches); }
+
+  function openDetail(id){
+    var g = getGame(id);
+    state.view = "library";
+    state.selected = id;
+    if(g){ libraryTab = g.status; saveLibraryTab(); }
+    if(!detailOpen){
+      listScrollY = window.scrollY;
+      detailOpen = true;
+      if(isMobileLayout() && !detailPushed){
+        try{ history.pushState({ qlDetail:true }, ""); detailPushed = true; }catch(e){}
+      }
+    }
+    save(); renderAll();
+    window.scrollTo(0, 0);
+  }
+
+  function leaveDetail(){
+    if(!detailOpen) return;
+    detailOpen = false;
+    if(detailPushed){
+      detailPushed = false;
+      try{ history.back(); }catch(e){}
+    }
+  }
+
+  function closeDetail(){
+    leaveDetail();
+    renderAll();
+    window.scrollTo(0, listScrollY);
+  }
+
+  window.addEventListener('popstate', function(){
+    detailPushed = false;
+    if(detailOpen){
+      detailOpen = false;
+      renderAll();
+      window.scrollTo(0, listScrollY);
+    }
+  });
+
+  function applyLayoutMode(){
+    var app = document.getElementById('app');
+    app.classList.toggle('show-detail', detailOpen && state.view === 'library');
+    app.classList.toggle('view-stats', state.view === 'stats');
+  }
+
   function renderAll(){
+    if(detailOpen && (state.view !== 'library' || !getGame(state.selected))) leaveDetail();
     renderTotals();
     renderViewTabs();
     renderLibrary();
     renderMain();
+    applyLayoutMode();
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function(btn){
     btn.addEventListener('click', function(){
-      state.view = btn.getAttribute('data-view');
+      var v = btn.getAttribute('data-view');
+      var wasDetail = detailOpen;
+      leaveDetail();
+      state.view = v;
       save(); renderAll();
+      window.scrollTo(0, (v === 'library' && wasDetail) ? listScrollY : 0);
     });
   });
 
@@ -1592,10 +1715,8 @@
       rawgPlatforms:addRawgPlatforms
     };
     state.games.unshift(ng);
-    state.view = "library";
-    state.selected = ng.id;
     overlay.hidden = true;
-    save(); renderAll();
+    openDetail(ng.id);
   });
 
   /* ---------- Settings modal ---------- */
