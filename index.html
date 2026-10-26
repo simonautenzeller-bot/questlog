@@ -318,6 +318,8 @@
   .cover-current img{ width:52px; height:52px; object-fit:cover; border-radius:6px; background:var(--surface-2); }
   .cover-current .cc-name{ font-family:var(--font-body); font-size:.85rem; color:var(--ink-soft); }
   .cover-results{ display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; margin-top:14px; }
+  #fSearchResults{ max-height:240px; margin:-4px 0 14px; }
+  #fSearchResults:empty{ display:none; }
   .cover-result{
     display:flex; align-items:center; gap:10px; padding:8px;
     border:1px solid var(--border); border-radius:var(--radius-s);
@@ -824,6 +826,12 @@
   <div class="modal">
     <h3>Neues Spiel</h3>
     <div class="field">
+      <label for="fSearch">RAWG-Suche (optional, füllt Felder automatisch)</label>
+      <input id="fSearch" type="text" placeholder="Titel eingeben zum Suchen …" autocomplete="off" enterkeyhint="search">
+      <div class="cover-hint" id="fSearchStatus"></div>
+    </div>
+    <div class="cover-results" id="fSearchResults"></div>
+    <div class="field">
       <label for="fTitle">Titel</label>
       <input id="fTitle" type="text" placeholder="z.B. Elden Ring">
     </div>
@@ -855,6 +863,22 @@
       </select>
     </div>
     <div class="field">
+      <label for="fYear">Erscheinungsjahr</label>
+      <input id="fYear" type="text" inputmode="numeric" maxlength="4" placeholder="z.B. 2022">
+    </div>
+    <div class="field">
+      <label for="fGenres">Genres (mit Komma trennen)</label>
+      <input id="fGenres" type="text" placeholder="z.B. Action, RPG">
+    </div>
+    <div class="field">
+      <label for="fDevelopers">Entwickler (mit Komma trennen)</label>
+      <input id="fDevelopers" type="text" placeholder="z.B. FromSoftware">
+    </div>
+    <div class="field">
+      <label for="fPublishers">Publisher (mit Komma trennen)</label>
+      <input id="fPublishers" type="text" placeholder="z.B. Bandai Namco">
+    </div>
+    <div class="field">
       <label>Bewertung</label>
       <div style="display:flex; align-items:center; gap:14px;">
         <div class="flames" id="fFlames"></div>
@@ -876,7 +900,6 @@
         <img id="addCoverImg" alt="">
         <span class="cc-name" id="addCoverName"></span>
       </div>
-      <button type="button" class="settings-btn" id="addCoverSearchBtn">Cover suchen (RAWG)</button>
     </div>
     <div class="modal-actions">
       <button class="ghost-btn" id="cancelAdd">Abbrechen</button>
@@ -961,7 +984,7 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.4.0";
+  var APP_VERSION = "1.5.0";
 
   var STATUS_META = {
     playing:{ label:"Am Laufen", color:"var(--st-playing)" },
@@ -1789,7 +1812,8 @@
     var wrap = document.getElementById('addCoverPreview');
     if(addCoverUrl){
       document.getElementById('addCoverImg').src = addCoverUrl;
-      var caption = [addReleaseYear, addDevelopers.join(', ')].filter(Boolean).join(' · ');
+      var caption = [addMetacritic ? 'Metacritic '+addMetacritic : '', addEsrbRating, addTags.length ? addTags.length+' Tags' : '']
+        .filter(Boolean).join(' · ');
       document.getElementById('addCoverName').textContent = caption || "Cover ausgewählt";
       wrap.hidden = false;
     } else {
@@ -1797,8 +1821,109 @@
     }
   }
 
+  var RAWG_PLATFORM_MAP = [
+    [/^PC$/i, 'PC'], [/PlayStation 4/i, 'PS4'], [/PlayStation 5/i, 'PS5'],
+    [/Switch 2/i, 'Switch 2'], [/^Nintendo Switch$/i, 'Switch'], [/Xbox/i, 'XBox'],
+    [/^Wii$/i, 'Wii'], [/Nintendo 64/i, 'Nintendo 64'], [/Game ?Boy Advance/i, 'Gameboy Advance'],
+    [/^Game ?Boy( Color)?$/i, 'Gameboy'], [/3DS/i, 'Nintendo 3DS']
+  ];
+  function ownPlatformsFor(rawgNames){
+    var found = [];
+    (rawgNames||[]).forEach(function(n){
+      RAWG_PLATFORM_MAP.some(function(m){
+        if(m[0].test(n)){ if(found.indexOf(m[1]) === -1) found.push(m[1]); return true; }
+        return false;
+      });
+    });
+    return found.filter(function(p){ return PLATFORMS.indexOf(p) !== -1; });
+  }
+  function splitList(s){
+    return String(s||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+  }
+
+  var addSearchTimer = null;
+  var addSearchSeq = 0;
+  function setAddSearchStatus(t){ document.getElementById('fSearchStatus').textContent = t || ''; }
+
+  function clearAddRawgData(){
+    addCoverUrl = ""; addRawgId = null; addReleaseYear = "";
+    addGenres = []; addDevelopers = []; addPublishers = [];
+    addMetacritic = null; addEsrbRating = ""; addDescription = "";
+    addTags = []; addRawgPlatforms = [];
+  }
+
+  document.getElementById('fSearch').addEventListener('input', function(e){
+    var q = e.target.value.trim();
+    var resultsEl = document.getElementById('fSearchResults');
+    clearTimeout(addSearchTimer);
+    addSearchSeq++;
+    if(!q){ resultsEl.innerHTML = ''; setAddSearchStatus(''); return; }
+    if(!rawgKey){ setAddSearchStatus('Kein RAWG-Key hinterlegt — Felder unten manuell ausfüllen (Einstellungen → Cover-Art).'); return; }
+    var seq = addSearchSeq;
+    addSearchTimer = setTimeout(function(){
+      setAddSearchStatus('Suche läuft …');
+      rawgSearch(q).then(function(list){
+        if(seq !== addSearchSeq) return;
+        if(list === null){ resultsEl.innerHTML = ''; setAddSearchStatus('RAWG-Suche fehlgeschlagen (Key prüfen oder später erneut versuchen).'); return; }
+        if(!list.length){ resultsEl.innerHTML = ''; setAddSearchStatus('Keine Treffer.'); return; }
+        setAddSearchStatus('');
+        resultsEl.innerHTML = list.slice(0,6).map(function(r){
+          return '<button type="button" class="cover-result" data-id="'+r.id+'">'+
+            (r.cover ? '<img src="'+esc(r.cover)+'" alt="" loading="lazy">' : '<span style="width:46px;height:46px;display:block;border-radius:4px;background:var(--surface-2);flex:none"></span>')+
+            '<span><span class="cr-name">'+esc(r.name)+'</span><br><span class="cr-year">'+esc(r.year||'')+'</span></span>'+
+          '</button>';
+        }).join('');
+        Array.prototype.forEach.call(resultsEl.querySelectorAll('.cover-result'), function(btn, idx){
+          btn.addEventListener('click', function(){ pickAddResult(list[idx]); });
+        });
+      });
+    }, 350);
+  });
+
+  function pickAddResult(r){
+    clearTimeout(addSearchTimer);
+    addSearchSeq++;
+    clearAddRawgData();
+    addRawgId = r.id;
+    addCoverUrl = r.cover || "";
+    document.getElementById('fSearchResults').innerHTML = '';
+    document.getElementById('fSearch').value = r.name;
+    document.getElementById('fTitle').value = r.name;
+    document.getElementById('fYear').value = r.year || '';
+    ['fGenres','fDevelopers','fPublishers'].forEach(function(id){ document.getElementById(id).value = ''; });
+    renderAddCoverPreview();
+    setAddSearchStatus('Lade Details …');
+    rawgGameDetails(r.id).then(function(d){
+      if(addRawgId !== r.id) return;
+      if(!d){ setAddSearchStatus('Details konnten nicht geladen werden — Titel und Cover sind übernommen.'); return; }
+      addReleaseYear = d.releaseYear; addGenres = d.genres; addDevelopers = d.developers; addPublishers = d.publishers;
+      addMetacritic = d.metacritic; addEsrbRating = d.esrbRating; addDescription = d.description;
+      addTags = d.tags; addRawgPlatforms = d.rawgPlatforms;
+      document.getElementById('fYear').value = d.releaseYear || '';
+      document.getElementById('fGenres').value = d.genres.join(', ');
+      document.getElementById('fDevelopers').value = d.developers.join(', ');
+      document.getElementById('fPublishers').value = d.publishers.join(', ');
+      var own = ownPlatformsFor(d.rawgPlatforms);
+      var platSel = document.getElementById('fPlatform');
+      if(own.length === 1 && !platSel.value){
+        platSel.value = own[0];
+        setAddSearchStatus('Übernommen. Plattform: '+own[0]+'.');
+      } else if(own.length > 1){
+        setAddSearchStatus('Übernommen. Erschienen für: '+own.join(', ')+' — bitte Plattform wählen.');
+      } else {
+        setAddSearchStatus('Übernommen.');
+      }
+      renderAddCoverPreview();
+    });
+  }
+
   var overlay = document.getElementById('overlay');
   document.getElementById('openAdd').addEventListener('click', function(){
+    clearTimeout(addSearchTimer); addSearchSeq++;
+    document.getElementById('fSearch').value = "";
+    document.getElementById('fSearchResults').innerHTML = "";
+    setAddSearchStatus(rawgKey ? '' : 'Kein RAWG-Key hinterlegt — Felder unten manuell ausfüllen (Einstellungen → Cover-Art).');
+    ['fYear','fGenres','fDevelopers','fPublishers'].forEach(function(id){ document.getElementById(id).value = ""; });
     document.getElementById('fTitle').value="";
     document.getElementById('fPlatform').value="";
     document.getElementById('fStatus').value="wishlist";
@@ -1815,13 +1940,10 @@
     renderAddFavorite();
     renderAddCoverPreview();
     overlay.hidden = false;
-    document.getElementById('fTitle').focus();
+    if(!isMobileLayout()) document.getElementById('fSearch').focus();
   });
   document.getElementById('cancelAdd').addEventListener('click', function(){ overlay.hidden = true; });
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.hidden = true; });
-  document.getElementById('addCoverSearchBtn').addEventListener('click', function(){
-    openCoverPicker('add', document.getElementById('fTitle').value);
-  });
   document.getElementById('confirmAdd').addEventListener('click', function(){
     var title = document.getElementById('fTitle').value.trim();
     if(!title){ document.getElementById('fTitle').focus(); return; }
@@ -1836,10 +1958,10 @@
       notes:"",
       coverUrl:addCoverUrl,
       rawgId:addRawgId,
-      releaseYear:addReleaseYear,
-      genres:addGenres,
-      developers:addDevelopers,
-      publishers:addPublishers,
+      releaseYear:document.getElementById('fYear').value.trim(),
+      genres:splitList(document.getElementById('fGenres').value),
+      developers:splitList(document.getElementById('fDevelopers').value),
+      publishers:splitList(document.getElementById('fPublishers').value),
       metacritic:addMetacritic,
       esrbRating:addEsrbRating,
       description:addDescription,
