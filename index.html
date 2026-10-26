@@ -581,6 +581,17 @@
     background:var(--bg); color:var(--ink); cursor:pointer; text-align:center;
   }
   .settings-btn:hover{ border-color:var(--accent); color:var(--accent-strong); }
+  :root{
+    --ab-card:var(--surface); --ab-text:var(--ink); --ab-muted:var(--ink-soft); --ab-border:var(--border);
+    --ab-accent:var(--accent-solid); --ab-accent-text:#fff; --ab-warn:var(--accent); --ab-radius:var(--radius-s); --ab-input:var(--bg);
+  }
+  .ab-panel{ font-family:var(--font-body); font-size:.9rem; }
+  .ab-actions .settings-btn{ flex:none; }
+  .ab-primary{ background:var(--accent-solid); color:#fff; border-color:transparent; }
+  .ab-primary:hover{ background:var(--accent-solid-hover); color:#fff; }
+  .ab-banner{ font-family:var(--font-body); }
+  .ab-banner-actions .settings-btn{ flex:none; }
+  .ab-input{ font-family:var(--font-mono); font-size:.8rem; }
   .version-line{ font-family:var(--font-mono); font-size:.76rem; color:var(--ink-faint); }
   .version-line b{ color:var(--ink-soft); }
 
@@ -899,6 +910,11 @@
     </div>
 
     <div class="settings-section">
+      <h4>Wochen-Backup</h4>
+      <div id="backupSlot"></div>
+    </div>
+
+    <div class="settings-section">
       <h4>Cover-Art (RAWG)</h4>
       <div class="field">
         <label for="rawgKeyInput">API-Key</label>
@@ -940,11 +956,12 @@
   </div>
 </div>
 
+<script src="backup.js"></script>
 <script>
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.3.1";
+  var APP_VERSION = "1.4.0";
 
   var STATUS_META = {
     playing:{ label:"Am Laufen", color:"var(--st-playing)" },
@@ -1008,11 +1025,13 @@
     };
   }
 
+  var wasFresh = false;
   function load(){
     try{
       var raw = localStorage.getItem(STORE_KEY);
       if(raw) return JSON.parse(raw);
     }catch(e){}
+    wasFresh = true;
     var seed = seedData();
     try{ localStorage.setItem(STORE_KEY, JSON.stringify(seed)); }catch(e){}
     return seed;
@@ -1860,8 +1879,19 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      AppBackup.markExternal('Export');
     }catch(e){}
   });
+
+  // Gemeinsam für den Import-Button und das Wiederherstellen aus dem Backup-Hinweis.
+  function applyImportedGames(parsed){
+    state.games = parsed.games;
+    state.selected = state.games.length ? state.games[0].id : null;
+    state.seeded = false;
+    state.view = "library";
+    save(); renderAll();
+  }
+
   document.getElementById('importDataBtn').addEventListener('click', function(){
     document.getElementById('importFile').click();
   });
@@ -1874,12 +1904,9 @@
         var parsed = JSON.parse(reader.result);
         if(!parsed || !Array.isArray(parsed.games)) throw new Error('invalid');
         if(!confirm('Vorhandene '+state.games.length+' Spiele durch '+parsed.games.length+' importierte Spiele ersetzen?')) return;
-        state.games = parsed.games;
-        state.selected = state.games.length ? state.games[0].id : null;
-        state.seeded = false;
-        state.view = "library";
-        save(); renderAll();
+        applyImportedGames(parsed);
         settingsOverlay.hidden = true;
+        AppBackup.markExternal('Wiederherstellung');
       }catch(err){
         alert('Diese Datei sieht nicht wie ein gültiges Questlog-Backup aus.');
       }
@@ -1887,6 +1914,26 @@
     reader.readAsText(file);
     e.target.value = "";
   });
+
+  /* ---------- Wochen-Backup (backup.js) ---------- */
+  AppBackup.init({
+    appId: "questlog",
+    appName: "Questlog",
+    filePrefix: "Questlog",
+    getData: function(){ return state; },
+    restore: function(text){
+      var parsed;
+      try{ parsed = JSON.parse(text); }catch(e){ return false; }
+      if(!parsed || !Array.isArray(parsed.games)) return false;
+      applyImportedGames(parsed);
+      return true;
+    },
+    isFresh: function(){ return wasFresh; },
+    bannerClass: "ab-banner--float",
+    btnClass: "settings-btn",
+    btnPrimaryClass: "settings-btn ab-primary"
+  });
+  document.getElementById('backupSlot').appendChild(AppBackup.createPanel());
 
   /* ---------- Cover picker (RAWG) ---------- */
   var coverOverlay = document.getElementById('coverOverlay');

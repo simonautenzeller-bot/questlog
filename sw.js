@@ -1,7 +1,8 @@
-const CACHE = "questlog-v6";
+const CACHE = "questlog-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./backup.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
